@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update Order — A.A & Sons Shipping</title>
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3">
+  <style>
+    body { background: #f8f5f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; font-family: 'Inter', sans-serif; }
+    .update-card { background: white; width: 100%; max-width: 450px; padding: 35px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.1); text-align: center; }
+    .status-icon { font-size: 3rem; margin-bottom: 20px; }
+    .order-info { margin: 25px 0; padding: 20px; background: #faf8f5; border-radius: 12px; text-align: left; border: 1px solid #eee; }
+    .order-info div { margin-bottom: 8px; font-size: 0.95rem; display: flex; justify-content: space-between; }
+    .order-info span { color: #888; }
+    .order-info strong { color: var(--teal); }
+    .btn-ship { width: 100%; padding: 16px; background: var(--teal); color: white; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s; box-shadow: 0 5px 15px rgba(20, 96, 92, 0.2); }
+    .btn-ship:active { transform: scale(0.98); }
+    .btn-ship:disabled { background: #ccc; cursor: not-allowed; box-shadow: none; }
+    .msg { margin-top: 20px; padding: 12px; border-radius: 8px; display: none; font-weight: 500; font-size: 0.9rem; }
+    .error { background: #fff5f5; color: #c0392b; border: 1px solid #fed7d7; }
+    .success { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+  </style>
+</head>
+<body>
+
+  <div class="update-card">
+    <div id="init-view">
+      <div class="status-icon">📦</div>
+      <h2 style="margin:0; color:var(--teal)">Shipping Update</h2>
+      <p style="color:#666; margin-top:8px">Scan successful. Please confirm the details.</p>
+      
+      <div class="order-info">
+        <div><span>Order #</span> <strong id="sh-orderNum">Loading...</strong></div>
+        <div><span>Customer</span> <strong id="sh-custName">Loading...</strong></div>
+        <div><span>Location</span> <strong id="sh-city">Loading...</strong></div>
+      </div>
+
+      <button id="shipBtn" class="btn-ship">
+        Mark as SHIPPED
+      </button>
+      <div id="errorMsg" class="msg error"></div>
+    </div>
+
+    <div id="success-view" style="display:none">
+      <div class="status-icon">✅</div>
+      <h2 style="margin:0; color:#276749">Successfully Updated</h2>
+      <p style="color:#666; margin-top:12px; line-height: 1.6">The order has been marked as <strong>Shipped</strong> in the system. The customer will be notified.</p>
+      <div style="margin-top:25px; font-size: 0.8rem; color: #aaa;">This link is now inactive.</div>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const id = urlParams.get('id');
+      const token = urlParams.get('token');
+      
+      const shipBtn = document.getElementById('shipBtn');
+      const errorMsg = document.getElementById('errorMsg');
+
+      if (!id || !token) {
+        showError('Invalid shipping link. Parameters missing.');
+        shipBtn.disabled = true;
+        return;
+      }
+
+      // Fetch minimal public info to verify it's the right order
+      try {
+        // We use a specific fetch for public info to avoid leak of private data
+        // For simplicity, let's assume we can get order details if we have the valid token
+        // Let's call the admin order endpoint BUT we're not logged in, so we'll 
+        // rely on a small trick: let's add a backend route for public verification
+        // or just let the button handle the validation.
+        
+        // I'll update the backend to have a "verify token" route
+        const verifyRes = await fetch(`/api/orders/public/verify-token?id=${id}&token=${token}`);
+        const verifyData = await verifyRes.json();
+        
+        if (!verifyData.success) {
+          showError(verifyData.message || 'Token is invalid or expired.');
+          shipBtn.disabled = true;
+          return;
+        }
+
+        const o = verifyData.order;
+        document.getElementById('sh-orderNum').textContent = o.orderNumber;
+        document.getElementById('sh-custName').textContent = o.shippingAddress?.name || 'Customer';
+        document.getElementById('sh-city').textContent = o.shippingAddress?.city || '—';
+
+      } catch (err) {
+        showError('Unable to verify order. Please scan again.');
+        shipBtn.disabled = true;
+      }
+
+      shipBtn.onclick = async () => {
+        shipBtn.disabled = true;
+        shipBtn.textContent = 'Updating...';
+        errorMsg.style.display = 'none';
+
+        try {
+          const res = await fetch('/api/orders/public/ship-by-token', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, token })
+          });
+          const data = await res.json();
+
+          if (!data.success) throw new Error(data.message);
+
+          document.getElementById('init-view').style.display = 'none';
+          document.getElementById('success-view').style.display = 'block';
+
+        } catch (err) {
+          showError(err.message);
+          shipBtn.disabled = false;
+          shipBtn.textContent = 'Mark as SHIPPED';
+        }
+      };
+
+      function showError(txt) {
+        errorMsg.textContent = txt;
+        errorMsg.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, follow" />
+  <title>Order Placed! — A.A & Sons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3" />
+</head>
+
+<body style="background:var(--bg)">
+
+  <nav class="navbar scrolled">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <img src="/logo.png" alt="" class="logo-img" onerror="this.style.display='none'" />
+        <div class="logo-fallback">
+          <span class="logo-text">A.A <span class="amp">&</span> Sons</span>
+        </div>
+      </a>
+    </div>
+  </nav>
+
+  <section class="success-page">
+    <div class="success-card animate-in">
+      <div class="success-icon">✅</div>
+      <h1>Order Placed!</h1>
+      <p>Thank you for your order. We've received it and will start processing it shortly.</p>
+      <div class="order-num-display" id="orderNumDisplay">Loading…</div>
+      <p id="paymentNote" style="font-size:.82rem;color:var(--mid)"></p>
+      <p style="font-size:.82rem;color:var(--mid);margin-top:4px">
+        We'll contact you on your provided phone number to confirm delivery details.
+      </p>
+
+      <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px;align-items:center">
+        <a href="/products" class="btn-hero-primary" style="max-width:260px;justify-content:center">
+          Continue Shopping
+        </a>
+        <a href="/" style="font-size:.82rem;color:var(--mid)">← Back to Home</a>
+      </div>
+
+      <div style="margin-top:32px;padding-top:24px;border-top:1px solid rgba(200,135,58,.15)">
+        <p style="font-size:.8rem;color:var(--mid);margin-bottom:12px">Need help? Contact us:</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <a href="tel:+918827478757"
+            style="display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--teal);font-weight:500">
+            📞 +91 8827478757
+          </a>
+          <a href="https://wa.me/8827478757"
+            style="display:flex;align-items:center;gap:6px;font-size:.82rem;color:#2e7d32;font-weight:500">
+            💬 WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/cart.js?v=1.0.3"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      Cart.updateBadge();
+      const params = new URLSearchParams(window.location.search);
+      const orderNum = params.get('order');
+      const paid = params.get('paid') === '1';
+      const pendingVerification = params.get('pending_verification') === '1';
+
+      document.getElementById('orderNumDisplay').textContent = orderNum || 'Your Order';
+      const note = document.getElementById('paymentNote');
+      
+      if (pendingVerification) {
+        note.innerHTML = `💳 Your payment is getting verified. Once that is done you will receive an email.<br>If you need immediate assistance, contact us at <strong>+91 8827478757</strong>.`;
+        note.style.color = '#c8873a'; // Some nice warning/pending color
+      } else if (paid) {
+        note.textContent = '💳 Payment received successfully.';
+        note.style.color = '#2e7d32';
+      }
+    });
+  </script>
+</body>
+
+</html>

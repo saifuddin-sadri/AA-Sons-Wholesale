@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order Details — Admin Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3" />
+  <style>
+    :root {
+      --font-display: 'Inter', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    body {
+      font-family: var(--font-body) !important;
+      background: #f8f5f0;
+    }
+
+    .order-details-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .detail-card {
+      background: white;
+      border-radius: 12px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      margin-bottom: 24px;
+      border: 1px solid rgba(200, 135, 58, 0.1);
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 32px;
+      margin-bottom: 32px;
+    }
+
+    .tracking-form {
+      background: var(--cream);
+      padding: 24px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(200, 135, 58, 0.2);
+    }
+
+    .tracking-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .order-details-container {
+        padding: 12px;
+      }
+      .detail-card {
+        padding: 20px 16px;
+      }
+      .detail-grid {
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+      .tracking-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .tracking-form {
+        padding: 16px;
+      }
+    }
+
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--teal);
+      font-weight: 600;
+      text-decoration: none;
+      margin-bottom: 24px;
+      transition: var(--transition);
+      cursor: pointer;
+    }
+
+    .back-btn:hover {
+      transform: translateX(-4px);
+    }
+
+    .order-item-row {
+      display: flex;
+      gap: 16px;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      align-items: center;
+    }
+
+    .order-item-img {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--light-gray);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="order-details-container">
+    <a href="/admin" class="back-btn">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path d="M19 12H5M12 19l-7-7 7-7" />
+      </svg>
+      Back to Admin Dashboard
+    </a>
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:16px;">
+      <h1 id="orderTitle" style="font-family:var(--font-display); font-size:1.8rem; color:var(--teal); margin:0;">Loading Order...</h1>
+      <div id="orderBadgeWrap"></div>
+    </div>
+
+    <div id="orderDetailsContent">
+      <!-- Content loaded via JS -->
+      <div style="text-align:center; padding:100px; color:var(--mid)">
+        <div class="loader-spinner"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/admin-order-details.js?v=1.0.3"></script>
+</body>
+
+</html>

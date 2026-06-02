@@ -1,0 +1,24 @@
+User-agent: *
+Allow: /
+Allow: /products
+Allow: /product
+Allow: /faq
+Allow: /sitemap.xml
+
+# Block private/transactional pages from indexing
+Disallow: /admin
+Disallow: /admin-order-details
+Disallow: /admin-bulk-enquiries
+Disallow: /cart
+Disallow: /checkout
+Disallow: /payment
+Disallow: /order-success
+Disallow: /invoice
+Disallow: /update-order
+Disallow: /api/
+
+# Sitemaps
+Sitemap: https://aasonsretail.in/sitemap.xml
+
+# Crawl-delay (be polite to all bots)
+Crawl-delay: 1

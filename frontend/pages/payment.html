@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, follow" />
+  <title>Payment — A.A & Sons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3" />
+  <style>
+    .payment-card {
+      background: linear-gradient(145deg, #ffffff, #fdfbf9);
+      border-radius: 20px;
+      padding: 48px 40px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.06), 0 2px 12px rgba(0, 0, 0, 0.02);
+      text-align: center;
+      max-width: 520px;
+      margin: 60px auto;
+      border: 1px solid rgba(200, 135, 58, 0.15);
+    }
+
+    .payment-card h2 {
+      font-family: 'Cormorant Garamond', serif;
+      color: var(--forest);
+      font-size: 2.6rem;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+
+    .order-details {
+      background: rgba(200, 135, 58, 0.05);
+      /* very light cream */
+      padding: 20px 24px;
+      border-radius: 12px;
+      margin: 28px 0;
+      color: var(--dark);
+      font-weight: 500;
+      border: 1px dashed rgba(200, 135, 58, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 1.05rem;
+    }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      margin: 32px auto;
+      padding: 32px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      border: 1.5px dashed var(--teal);
+      max-width: 200px;
+      transition: transform 0.3s ease;
+    }
+
+    #qrcode:hover {
+      transform: scale(1.02);
+    }
+
+    .instructions {
+      font-size: 0.95rem;
+      color: var(--mid);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    .elegant-file-upload {
+      border: 2px dashed rgba(27, 94, 75, 0.3);
+      border-radius: 12px;
+      padding: 2px;
+      transition: all 0.3s ease;
+      background: #fafafa;
+      cursor: pointer;
+    }
+
+    .elegant-file-upload:hover,
+    .elegant-file-upload.dragover {
+      border-color: var(--teal);
+      background: rgba(27, 94, 75, 0.03);
+    }
+
+    .file-upload-label {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      cursor: pointer;
+      border-radius: 10px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .upload-icon-wrapper {
+      background: white;
+      min-width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .whatsapp-btn {
+      background-color: #25D366;
+      color: white;
+      border: none;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-family: 'Poppins', sans-serif;
+      font-weight: 600;
+      width: 100%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .whatsapp-btn:hover {
+      background-color: #128C7E;
+      transform: translateY(-2px);
+    }
+
+    .whatsapp-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* UPI App Selector Modal (iOS Specific) */
+    .upi-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .upi-modal.open {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .upi-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+    }
+
+    .upi-modal-content {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      background: white;
+      border-radius: 24px 24px 0 0;
+      padding: 32px 24px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    .upi-modal.open .upi-modal-content {
+      transform: translateY(0);
+    }
+
+    @media (min-width: 768px) {
+      .upi-modal {
+        align-items: center;
+      }
+
+      .upi-modal-content {
+        border-radius: 20px;
+        margin: 20px;
+        width: 90%;
+        transform: translateY(20px);
+      }
+
+      .upi-modal.open .upi-modal-content {
+        transform: translateY(0);
+      }
+    }
+
+    .upi-modal-header {
+      text-align: center;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .upi-modal-header h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.8rem;
+      color: var(--teal);
+      margin: 0;
+      font-weight: 700;
+    }
+
+    .upi-modal-close {
+      position: absolute;
+      right: -8px;
+      top: -8px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      color: var(--mid);
+      cursor: pointer;
+      background: var(--bg);
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+
+    .upi-modal-close:hover {
+      color: var(--teal);
+      background: var(--cream);
+    }
+
+    .upi-app-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .upi-app-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 10px;
+      border-radius: 16px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      background: #fdfbf9;
+      border: 1px solid rgba(200, 135, 58, 0.1);
+      text-decoration: none;
+    }
+
+    .upi-app-item:hover {
+      background: white;
+      border-color: var(--teal);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(27, 94, 75, 0.08);
+    }
+
+    .upi-app-icon {
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+      border-radius: 12px;
+      padding: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      flex-shrink: 0;
+      /* Prevent collapse on iOS */
+    }
+
+    .upi-app-icon img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      /* Fixed for Safari */
+      object-fit: contain;
+    }
+
+    .upi-app-item span {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--dark);
+      font-family: 'Poppins', sans-serif;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar scrolled">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <img src="/logo.png" alt="A.A & Sons" class="logo-img"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="logo-fallback" style="display:none">
+          <span class="logo-text">A.A <span class="amp">&</span> Sons</span>
+        </div>
+      </a>
+      <div class="nav-right">
+        <!-- Secure checkout badge -->
+        <div style="display:flex;align-items:center;gap:6px;font-size:.76rem;color:var(--teal)">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0110 0v4" />
+          </svg>
+          Secure Payment
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <section class="container" style="min-height: 70vh;">
+    <div class="payment-card" id="paymentCard" style="display: none;">
+      <h2>Complete Payment</h2>
+      <p style="color:var(--mid); font-size: 0.9rem;">Scan the QR code below using any UPI app</p>
+
+      <div class="order-details">
+        <div>Order ID: <span id="lblOrderId" style="color:var(--forest)"></span></div>
+        <div>Amount to Pay: <span id="lblAmount" style="color:var(--forest)"></span></div>
+      </div>
+
+      <div id="qrcode"></div>
+
+      <!-- Direct UPI App Links (Visible directly) -->
+      <div id="directUpiApps" style="display: flex; flex-direction: column; gap: 16px; margin-top: 24px;">
+        <div style="text-align: center; margin-bottom: 4px;">
+          <span style="font-size: 0.85rem; color: var(--mid); font-weight: 500;">Pay directly using:</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+          <a id="directGPay" href="#" class="upi-app-item" style="padding: 12px 6px;">
+            <div class="upi-app-icon" style="width: 40px; height: 40px;">
+              <img src="https://res.cloudinary.com/dszkgrxpy/image/upload/v1775833033/google-pay-logo-2020_o5hiec.svg" alt="GPay">
+            </div>
+            <span style="font-size: 0.7rem;">Google Pay</span>
+          </a>
+          <a id="directPhonePe" href="#" class="upi-app-item" style="padding: 12px 6px;">
+            <div class="upi-app-icon" style="width: 40px; height: 40px;">
+              <img src="https://res.cloudinary.com/dszkgrxpy/image/upload/v1775833197/phonepe-logo_fpwza5.svg" alt="PhonePe">
+            </div>
+            <span style="font-size: 0.7rem;">PhonePe</span>
+          </a>
+          <a id="directPaytm" href="#" class="upi-app-item" style="padding: 12px 6px;">
+            <div class="upi-app-icon" style="width: 40px; height: 40px;">
+              <img src="https://res.cloudinary.com/dszkgrxpy/image/upload/v1775833302/paytm-logo-standalone-_nij9ap.svg" alt="Paytm">
+            </div>
+            <span style="font-size: 0.7rem;">Paytm</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Conditional UPI ID Display (> 2000 INR) -->
+      <div id="highValuePayment" style="display: none; background: #fff8f0; border: 1.5px dashed var(--gold); border-radius: 12px; padding: 20px; margin-top: 20px; margin-bottom: 24px;">
+        <div style="color: var(--gold-dark); font-weight: 600; font-size: 0.95rem; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          High Value Transaction
+        </div>
+        <p style="font-size: 0.8rem; color: var(--mid); margin-bottom: 12px;">For orders above ₹2000, please pay directly to our UPI ID for one-go payment:</p>
+        <div style="background: white; border: 1px solid rgba(200, 135, 58, 0.2); border-radius: 8px; padding: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <span id="txtUpiId" style="font-family: monospace; font-weight: 600; color: var(--teal); font-size: 1rem;"></span>
+          <button id="btnCopyUpi" style="color: var(--gold); padding: 4px 8px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--gold); border-radius: 4px;">Copy</button>
+        </div>
+      </div>
+
+      <p class="instructions" style="margin-top: 24px;">
+        After paying, please upload a screenshot of your payment below.
+      </p>
+
+      <div style="margin-bottom: 24px; text-align: left;">
+        <label
+          style="display: block; font-size: 0.95rem; font-weight: 600; color: var(--dark); margin-bottom: 8px;">Upload
+          Payment Screenshot*</label>
+        <div class="elegant-file-upload" id="uploadDropzone">
+          <input type="file" id="inpScreenshot" accept="image/*" required style="display: none;" />
+          <label for="inpScreenshot" class="file-upload-label">
+            <div class="upload-icon-wrapper">
+              <svg width="24" height="24" fill="none" stroke="var(--teal)" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+            </div>
+            <div class="upload-text" style="flex:1;">
+              <span id="fileNameDisplay"
+                style="color:var(--teal-dark); font-weight:600; font-size:0.9rem; display:block;">Click to choose
+                file</span>
+              <span style="display:block; font-size:0.75rem; color:var(--mid); margin-top:2px;">PNG, JPG, up to
+                5MB</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 24px;">
+        <button id="btnSubmitUtr" class="btn-hero-primary"
+          style="width: 100%; height: 56px; line-height: 1; padding: 0; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Poppins', sans-serif; font-weight: 600; border: 2px solid transparent; box-sizing: border-box; -webkit-appearance: none; appearance: none; margin: 0; font-size: 1rem; flex-shrink: 0;"
+          disabled>
+          I've Paid
+        </button>
+      </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <a href="/" style="color: var(--mid); text-decoration: underline; font-size: 0.85rem;">Cancel & Return to
+          Home</a>
+      </div>
+    </div>
+
+    <div id="loadingState" style="text-align: center; padding: 60px 0;">
+      <p style="color:var(--mid)">Loading payment details...</p>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- QR Code Library -->
+  <!-- UPI App Selector Modal (for iOS) -->
+  <div id="upiModal" class="upi-modal">
+    <div class="upi-modal-overlay" id="upiModalOverlay"></div>
+    <div class="upi-modal-content">
+      <div class="upi-modal-header">
+        <h3>Select UPI App</h3>
+        <button id="closeUpiModal" class="upi-modal-close">&times;</button>
+      </div>
+      <div class="upi-app-list">
+        <a id="linkGPay" href="#" class="upi-app-item">
+          <div class="upi-app-icon">
+            <img src="https://res.cloudinary.com/dszkgrxpy/image/upload/v1775833033/google-pay-logo-2020_o5hiec.svg"
+              alt="GPay">
+          </div>
+          <span>Google Pay</span>
+        </a>
+        <a id="linkPhonePe" href="#" class="upi-app-item">
+          <div class="upi-app-icon">
+            <img src="https://res.cloudinary.com/dszkgrxpy/image/upload/v1775833197/phonepe-logo_fpwza5.svg"
+              alt="PhonePe">
+          </div>
+          <span>PhonePe</span>
+        </a>
+        <a id="linkPaytm" href="#" class="upi-app-item">
+          <div class="upi-app-icon">
+            <img src="https://res.cloudinary.com/dszkgrxpy/image/upload/v1775833302/paytm-logo-standalone-_nij9ap.svg"
+              alt="Paytm">
+          </div>
+          <span>Paytm</span>
+        </a>
+      </div>
+      <p style="text-align: center; font-size: 0.75rem; color: var(--mid); margin-top: 24px; line-height: 1.4;">
+        Don't see your app? You can always scan the QR code using any UPI app.
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js?v=1.0.3"></script>
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/cart.js?v=1.0.3"></script>
+  <script src="/js/main.js?v=1.0.3"></script>
+  <script src="/js/payment.js?v=1.0.3"></script>
+</body>
+
+</html>

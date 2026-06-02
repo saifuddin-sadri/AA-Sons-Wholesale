@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice — A.A & Sons</title>
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3">
+  <style>
+    body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      color: #333;
+    }
+
+    .invoice-container {
+      width: 105mm;
+      height: 148mm;
+      margin: 10px auto;
+      padding: 15px;
+      border: 1px solid #eee;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--teal);
+      padding-bottom: 8px;
+    }
+
+    .store-info h1 {
+      margin: 0;
+      color: var(--teal);
+      font-size: 1.1rem;
+    }
+
+    .store-info p {
+      margin: 1px 0;
+      color: #666;
+      font-size: 0.65rem;
+    }
+
+    .contact-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      font-size: 0.65rem;
+      color: #666;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 5px;
+    }
+
+    .invoice-title {
+      text-align: right;
+    }
+
+    .invoice-title h2 {
+      margin: 0;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-size: 0.9rem;
+    }
+
+    #inv-orderNum {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      letter-spacing: 0;
+    }
+
+    .invoice-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .detail-group h3 {
+      margin: 0 0 5px;
+      font-size: 0.7rem;
+      color: var(--teal);
+      text-transform: uppercase;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 3px;
+    }
+
+    .detail-group p {
+      margin: 2px 0;
+      line-height: 1.3;
+      font-size: 0.7rem;
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+
+    .invoice-table th {
+      background: #f9f9f9;
+      text-align: left;
+      padding: 5px;
+      border-bottom: 2px solid #eee;
+      color: #666;
+      font-size: 0.6rem;
+      text-transform: uppercase;
+    }
+
+    .invoice-table td {
+      padding: 6px 5px;
+      border-bottom: 1px solid #eee;
+      font-size: 0.75rem;
+    }
+
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 1px dashed #ddd;
+      text-align: center;
+    }
+
+    .qr-code {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 5px;
+      border: 1px solid #eee;
+      padding: 2px;
+    }
+
+    .qr-label {
+      font-size: 0.6rem;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .no-print {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      display: flex;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 50px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-print {
+      padding: 10px 25px;
+      background: var(--teal);
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-print:hover {
+      background: var(--teal-dark);
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+        width: 105mm;
+        height: 148mm;
+      }
+
+      .no-print {
+        display: none !important;
+      }
+
+      .invoice-container {
+        margin: 0;
+        padding: 15px;
+        border: none;
+        box-shadow: none;
+        width: 105mm;
+        height: 148mm;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="invoice-container" id="invoice">
+    <div class="invoice-header">
+      <div style="display:flex; gap:12px; align-items:center;">
+        <img src="/logo.png" alt="A.A & Sons Logo" style="height:50px; width:50px; object-fit:contain;">
+        <div style="display:flex; flex-direction:column;">
+          <h1 style="margin:0; color:var(--teal); font-size:1.4rem;">A.A & Sons</h1>
+          <div style="font-size:0.65rem; color:#666; font-weight:500; margin-top:-2px;">Shop no: 06, Marothiya Bazar
+            near Bajaj Khana Chowk, Indore (M.P.)</div>
+        </div>
+      </div>
+      <div class="invoice-title">
+        <h2 style="color:var(--gold); font-size:1.1rem; margin:0;">Invoice</h2>
+      </div>
+    </div>
+
+    <div class="contact-row">
+      <div>Marriage Goods & Gifting | Ph: +91 88274 78757</div>
+      <div style="text-align:right;">Date: <span id="inv-date">...</span></div>
+    </div>
+
+    <!-- Order Identity Bar -->
+    <div
+      style="background:var(--teal); color:white; padding:6px 12px; display:flex; justify-content:space-between; align-items:center; border-radius:4px; margin-bottom:15px;">
+      <div style="font-size:0.75rem; font-weight:600; text-transform:uppercase; letter-spacing:1px;">Order Information
+      </div>
+      <div style="font-size:0.85rem; font-weight:700;"># <span id="inv-orderNum"
+          style="font-family:'Courier New', Courier, monospace;">...</span></div>
+    </div>
+
+    <div class="invoice-details">
+      <div class="detail-group">
+        <h3>Customer Details</h3>
+        <p><strong>Name:</strong> <span id="inv-custName">...</span></p>
+        <p><strong>Email:</strong> <span id="inv-custEmail">...</span></p>
+        <p><strong>Phone:</strong> <span id="inv-custPhone">...</span></p>
+      </div>
+      <div class="detail-group">
+        <h3>Shipping Address</h3>
+        <p id="inv-address">...</p>
+      </div>
+    </div>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="text-align:right">Weight / Info</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Shipping Package Contents</td>
+          <td style="text-align:right"><span id="inv-weight">...</span> kg</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="qr-section">
+      <img id="inv-qr" class="qr-code" src="" alt="QR Code">
+      <div class="qr-label">Scan to mark this order as SHIPPED</div>
+      <div style="font-size: 0.7rem; color: #aaa; margin-top: 5px;">(One-time use secure token)</div>
+    </div>
+  </div>
+
+  <div class="no-print">
+    <button class="btn-print" onclick="window.print()">
+      <span>🖨️</span> Print Invoice
+    </button>
+  </div>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('id');
+
+      if (!orderId) {
+        alert('Order ID missing');
+        window.close();
+        return;
+      }
+
+      // Check auth (only admins should see this)
+      if (!API.isLoggedIn() || !API.isAdmin()) {
+        alert('Access denied. Admin only.');
+        window.location.href = '/admin';
+        return;
+      }
+
+      try {
+        // Fetch shipping token and order data
+        const res = await fetch(`/api/orders/admin/${orderId}/shipping-token`, {
+          headers: { 'Authorization': `Bearer ${API.getToken()}` }
+        });
+        const data = await res.json();
+
+        if (!data.success) throw new Error(data.message);
+
+        const o = data.order;
+        document.getElementById('inv-orderNum').textContent = o.orderNumber;
+        document.getElementById('inv-date').textContent = new Date(o.createdAt).toLocaleDateString();
+
+        const custName = o.shippingAddress?.name || o.user?.name || 'Customer';
+        document.getElementById('inv-custName').textContent = custName;
+        document.getElementById('inv-custEmail').textContent = o.shippingAddress?.email || o.user?.email || '—';
+        document.getElementById('inv-custPhone').textContent = o.shippingAddress?.phone || o.user?.phone || '—';
+
+        const addr = o.shippingAddress;
+        document.getElementById('inv-address').innerHTML = `
+          ${addr.street}<br>
+          ${addr.city}, ${addr.state} — ${addr.pincode}
+        `;
+
+        document.getElementById('inv-weight').textContent = o.totalWeight.toFixed(3);
+        document.getElementById('inv-qr').src = data.qrCode;
+
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load invoice: ' + err.message);
+      }
+    });
+  </script>
+</body>
+
+</html>

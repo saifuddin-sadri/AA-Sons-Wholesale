@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel — A.A & Sons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3" />
+  <style>
+    /* Admin Notifications Fixes */
+    .admin-notif-wrapper {
+      position: relative !important;
+      display: inline-block !important;
+    }
+
+    .admin-notif-btn {
+      position: relative !important;
+      width: 38px !important;
+      height: 38px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: #fff !important;
+      border-radius: 50% !important;
+      border: 1px solid rgba(200, 135, 58, 0.2) !important;
+      color: var(--teal) !important;
+      cursor: pointer !important;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .admin-notif-dropdown {
+      position: absolute !important;
+      top: calc(100% + 10px) !important;
+      right: -10px !important;
+      width: 300px !important;
+      background: white !important;
+      border: 1px solid rgba(200, 135, 58, 0.2) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+      z-index: 9999 !important;
+      display: none !important;
+      overflow: hidden !important;
+    }
+
+    .admin-notif-dropdown.open {
+      display: block !important;
+      animation: notifSlideIn 0.2s ease-out !important;
+    }
+
+    @keyframes notifSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .admin-notif-header {
+      padding: 12px 15px !important;
+      background: #fdfaf4 !important;
+      border-bottom: 1px solid rgba(200, 135, 58, 0.1) !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+    }
+
+    .admin-notif-header h4 {
+      margin: 0 !important;
+      font-size: 0.85rem !important;
+      font-weight: 700 !important;
+      color: var(--teal) !important;
+    }
+
+    .admin-notif-list {
+      max-height: 350px !important;
+      overflow-y: auto !important;
+    }
+
+    .admin-notif-item {
+      padding: 12px 15px !important;
+      border-bottom: 1px solid #eee !important;
+      display: flex !important;
+      gap: 12px !important;
+      cursor: pointer !important;
+    }
+
+    .admin-notif-item:hover {
+      background: #f9f9f9 !important;
+    }
+
+    .admin-notif-item.unread {
+      background: rgba(27, 94, 75, 0.03) !important;
+    }
+
+    .admin-notif-empty {
+      padding: 30px !important;
+      text-align: center !important;
+      color: #999 !important;
+      font-size: 0.85rem !important;
+    }
+
+    .admin-notif-icon {
+      width: 32px !important;
+      height: 32px !important;
+      border-radius: 8px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-shrink: 0 !important;
+      font-size: 1.1rem !important;
+    }
+
+    .admin-notif-icon.order {
+      background: #E8F5E9 !important;
+      color: #2E7D32 !important;
+    }
+
+    .admin-notif-icon.stock {
+      background: #FFF3E0 !important;
+      color: #E65100 !important;
+    }
+
+    .admin-notif-icon.status {
+      background: #E3F2FD !important;
+      color: #1565C0 !important;
+    }
+
+    .admin-notif-content {
+      flex: 1 !important;
+    }
+
+    .admin-notif-title {
+      font-weight: 600 !important;
+      font-size: 0.82rem !important;
+      color: var(--dark) !important;
+      margin-bottom: 2px !important;
+    }
+
+    .admin-notif-msg {
+      font-size: 0.75rem !important;
+      color: var(--mid) !important;
+      line-height: 1.3 !important;
+    }
+
+    .admin-notif-time {
+      font-size: 0.65rem !important;
+      color: #999 !important;
+      margin-top: 4px !important;
+    }
+
+    .admin-notif-clear-one {
+      background: none !important;
+      border: none !important;
+      color: #ccc !important;
+      cursor: pointer !important;
+      font-size: 0.8rem !important;
+      padding: 5px !important;
+    }
+
+    .admin-notif-clear-one:hover {
+      color: #C62828 !important;
+    }
+
+    .admin-notif-badge {
+      position: absolute !important;
+      top: -2px !important;
+      right: -2px !important;
+      background: #C62828 !important;
+      color: white !important;
+      font-size: 0.65rem !important;
+      font-weight: 700 !important;
+      width: 18px !important;
+      height: 18px !important;
+      border-radius: 50% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      border: 2px solid white !important;
+      z-index: 5 !important;
+    }
+  </style>
+</head>
+
+<body style="background:#f8f5f0">
+
+  <!-- Login Gate -->
+  <div id="loginGate"
+    style="display:none;min-height:100vh;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--teal-dark),var(--teal))">
+    <div
+      style="background:white;border-radius:20px;padding:40px;width:100%;max-width:380px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+      <div style="text-align:center;margin-bottom:28px">
+        <img src="/logo.png" alt="A.A & Sons" style="height:56px;margin:0 auto 12px;display:block"
+          onerror="this.style.display='none'" />
+        <h2 style="font-family:var(--font-display);font-size:1.5rem;color:var(--teal)">Admin Login</h2>
+        <p style="font-size:.82rem;color:var(--mid);margin-top:4px">Access restricted to administrators</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="loginEmail" placeholder="admin@aasons.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" />
+        </div>
+        <p id="loginError" style="color:#C62828;font-size:.8rem;display:none"></p>
+        <button class="btn-place-order" id="loginBtn" style="margin-top:4px">
+          Sign In to Admin
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin App -->
+  <div id="adminApp" style="display:none">
+    <div class="admin-layout">
+
+      <!-- ── SIDEBAR ── -->
+      <aside class="admin-sidebar" id="adminSidebar">
+        <div class="admin-logo">
+          <div class="admin-logo-text">A.A & Sons</div>
+          <div class="admin-logo-sub">Admin Panel</div>
+        </div>
+        <nav class="admin-nav">
+          <div class="admin-nav-item active" data-page="dashboard">
+            <span class="admin-nav-icon">📊</span> Dashboard
+          </div>
+          <div class="admin-nav-item" data-page="complete-dashboard">
+            <span class="admin-nav-icon">📈</span> Complete Dashboard
+          </div>
+          <div class="admin-nav-item" data-page="orders">
+            <span class="admin-nav-icon">📦</span> Orders
+          </div>
+          <div class="admin-nav-item" data-page="manual-order">
+            <span class="admin-nav-icon">📝</span> Create Manual Order
+          </div>
+          <div class="admin-nav-item" data-page="products">
+            <span class="admin-nav-icon">🛍️</span> Products
+          </div>
+          <div class="admin-nav-item" data-page="categories">
+            <span class="admin-nav-icon">📁</span> Categories
+          </div>
+          <div class="admin-nav-item" data-page="faq">
+            <span class="admin-nav-icon">❓</span> FAQs / Queries
+          </div>
+          <div class="admin-nav-item" data-page="bulk-enquiries">
+            <span class="admin-nav-icon">📢</span> Bulk Enquiries
+          </div>
+          <div class="admin-nav-item" data-page="add-product">
+            <span class="admin-nav-icon">➕</span> Add Product
+          </div>
+          <div class="admin-nav-item" data-page="inventory">
+            <span class="admin-nav-icon">⚠️</span> Stock Alerts
+          </div>
+          <div class="admin-nav-item" data-page="festive">
+            <span class="admin-nav-icon">✨</span> Festive Season
+          </div>
+          <div class="admin-nav-item" data-page="registration-requests">
+            <span class="admin-nav-icon">📋</span> Registration Requests
+          </div>
+          <div class="admin-nav-item" data-page="login-requests">
+            <span class="admin-nav-icon">🔐</span> Login Requests
+          </div>
+          <div class="admin-nav-item" data-page="users">
+            <span class="admin-nav-icon">👥</span> Authorised Users
+          </div>
+        </nav>
+        <div class="admin-user-info">
+          <div id="adminUserName" style="color:var(--cream-dark);font-weight:500;font-size:.82rem">Admin</div>
+          <button onclick="adminLogout()"
+            style="font-size:.72rem;color:rgba(245,237,214,.4);cursor:pointer;margin-top:4px;display:block">Sign Out
+            →</button>
+        </div>
+      </aside>
+
+      <!-- ── MAIN ── -->
+      <main class="admin-main">
+        <div class="admin-topbar">
+          <button id="sidebarToggle" style="display:none;padding:6px"
+            onclick="document.getElementById('adminSidebar').classList.toggle('open')">
+            <svg width="20" height="20" fill="none" stroke="var(--teal)" stroke-width="2" viewBox="0 0 24 24">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <h1 class="admin-page-title" id="adminPageTitle">Dashboard</h1>
+
+          <div style="display:flex; align-items:center; gap:20px; margin-left:auto;">
+            <!-- Notification Bell -->
+            <div class="admin-notif-wrapper">
+              <button class="admin-notif-btn" id="notifBtn" onclick="toggleNotifDropdown()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                </svg>
+                <span class="admin-notif-badge" id="notifBadge" style="display:none">0</span>
+              </button>
+
+              <div class="admin-notif-dropdown" id="notifDropdown">
+                <div class="admin-notif-header">
+                  <h4>Notifications</h4>
+                  <button onclick="clearAllNotifications()"
+                    style="font-size:0.75rem; color:var(--teal); font-weight:700; cursor:pointer;">Clear All</button>
+                </div>
+                <div class="admin-notif-list" id="notifList">
+                  <div class="admin-notif-empty">No new notifications</div>
+                </div>
+              </div>
+            </div>
+
+            <a href="/"
+              style="font-size:0.8rem; color:var(--mid); font-weight:500; border-left:1px solid #ddd; padding-left:20px; line-height:1;">View
+              Site</a>
+          </div>
+        </div>
+
+        <div class="admin-content">
+
+          <!-- ── DASHBOARD PAGE ── -->
+          <div id="page-dashboard" class="admin-page">
+            <div class="stats-grid" id="dashStats">
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Total Orders (Today)</div>
+                  <div class="stat-card-value" id="ds-orders">—</div>
+                </div>
+                <div class="stat-card-icon">📦</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Total Revenue (Today)</div>
+                  <div class="stat-card-value" id="ds-revenue">—</div>
+                </div>
+                <div class="stat-card-icon">💰</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Pending Orders</div>
+                  <div class="stat-card-value" id="ds-pending">—</div>
+                </div>
+                <div class="stat-card-icon">⏳</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Delivered</div>
+                  <div class="stat-card-value" id="ds-delivered">—</div>
+                </div>
+                <div class="stat-card-icon">✅</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Total Shipping (Today)</div>
+                  <div class="stat-card-value" id="ds-shipping">—</div>
+                </div>
+                <div class="stat-card-icon">🚚</div>
+              </div>
+            </div>
+
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>Today's Orders</h3>
+                <button class="btn-admin-primary" onclick="showPage('orders')">View All →</button>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order #</th>
+                      <th>Customer</th>
+                      <th>Amount</th>
+                      <th>Shipping</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="recentOrdersBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── COMPLETE DASHBOARD PAGE ── -->
+          <div id="page-complete-dashboard" class="admin-page" style="display:none">
+            <div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+              <select id="completeDashboardFilter" class="form-select" style="width:200px">
+                <option value="all">All Time</option>
+                <option value="today">Today</option>
+                <option value="1week">Last 1 Week</option>
+                <option value="1month">Last 1 Month</option>
+                <option value="3months">Last 3 Months</option>
+                <option value="6months">Last 6 Months</option>
+                <option value="1year">Last 1 Year</option>
+              </select>
+            </div>
+            <div class="stats-grid" id="completeDashStats">
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Total Orders</div>
+                  <div class="stat-card-value" id="cds-orders">—</div>
+                </div>
+                <div class="stat-card-icon">📦</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Total Revenue</div>
+                  <div class="stat-card-value" id="cds-revenue">—</div>
+                </div>
+                <div class="stat-card-icon">💰</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Pending Orders</div>
+                  <div class="stat-card-value" id="cds-pending">—</div>
+                </div>
+                <div class="stat-card-icon">⏳</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Delivered</div>
+                  <div class="stat-card-value" id="cds-delivered">—</div>
+                </div>
+                <div class="stat-card-icon">✅</div>
+              </div>
+              <div class="stat-card">
+                <div>
+                  <div class="stat-card-label">Total Shipping</div>
+                  <div class="stat-card-value" id="cds-shipping">—</div>
+                </div>
+                <div class="stat-card-icon">🚚</div>
+              </div>
+            </div>
+
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>Recent Orders (Filtered)</h3>
+                <button class="btn-admin-primary" onclick="showPage('orders')">View All →</button>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order #</th>
+                      <th>Customer</th>
+                      <th>Amount</th>
+                      <th>Shipping</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="cds-recentOrdersBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── ORDERS PAGE ── -->
+          <div id="page-orders" class="admin-page" style="display:none">
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>All Orders <span id="badgeTotalOrders"
+                    style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
+                </h3>
+                <div class="admin-table-tools">
+                  <div style="position:relative">
+                    <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mid)"
+                      width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" class="admin-search" id="orderSearch" placeholder="Search order #"
+                      style="padding-left:32px" />
+                  </div>
+                  <select class="admin-filter-select" id="orderStatusFilter">
+                    <option value="all">All Status</option>
+                    <option value="payment_pending">Payment Pending</option>
+                    <option value="payment_received">Payment Received</option>
+
+                    <option value="confirmed">Confirmed</option>
+                    <option value="processing">Processing</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order #</th>
+                      <th>Customer</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Shipping</th>
+                      <th>Payment</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ordersTableBody">
+                    <tr>
+                      <td colspan="9" style="text-align:center;padding:32px;color:var(--mid)">Loading orders…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div
+                style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid rgba(200,135,58,.08)">
+                <span id="ordersPaginationInfo" style="font-size:.8rem;color:var(--mid)"></span>
+                <div style="display:flex;gap:8px">
+                  <button id="ordersPrevBtn" onclick="ordersPage--; loadOrders()" class="btn-nav-outline"
+                    style="padding:6px 14px;font-size:.78rem">← Prev</button>
+                  <button id="ordersNextBtn" onclick="ordersPage++; loadOrders()" class="btn-nav-cta"
+                    style="padding:6px 14px;font-size:.78rem">Next →</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Manual Orders Section -->
+            <div class="admin-table-section" style="margin-top:40px; border-top: 2px solid #e67e22;">
+              <div class="admin-table-header">
+                <h3 style="color:#e67e22">📝 Manual Orders (Admin Created)</h3>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Order #</th>
+                      <th>Customer</th>
+                      <th>Items</th>
+                      <th>Total</th>
+                      <th>Shipping</th>
+                      <th>Payment</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="manualOrdersTableBody">
+                    <tr>
+                      <td colspan="9" style="text-align:center;padding:32px;color:var(--mid)">No manual orders found.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── MANUAL ORDER PAGE ── -->
+          <div id="page-manual-order" class="admin-page" style="display:none">
+            <div class="checkout-form-section" style="max-width:900px">
+              <h2>Create Manual Order</h2>
+              <form id="manualOrderForm" onsubmit="submitManualOrder(event)">
+                <div class="form-grid">
+                  <!-- Customer Details -->
+                  <div class="form-group full">
+                    <h3 style="margin-bottom:12px; color:var(--teal)">Customer Details</h3>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Customer Name *</label>
+                    <input type="text" class="form-input" id="moCustomerName" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Phone Number *</label>
+                    <input type="tel" class="form-input" id="moPhone" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Email (Optional)</label>
+                    <input type="email" class="form-input" id="moEmail" />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Pincode *</label>
+                    <input type="text" class="form-input" id="moPincode" required />
+                  </div>
+                  <div class="form-group full">
+                    <label class="form-label">Street Address *</label>
+                    <input type="text" class="form-input" id="moStreet" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">City *</label>
+                    <input type="text" class="form-input" id="moCity" required />
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">State *</label>
+                    <input type="text" class="form-input" id="moState" required />
+                  </div>
+
+                  <!-- Products -->
+                  <div class="form-group full">
+                    <h3 style="margin-top:20px; margin-bottom:12px; color:var(--teal)">Products Selection</h3>
+                    <div class="admin-input-group" style="margin-bottom:15px">
+                      <input type="text" id="moProductSearchInput" class="form-input"
+                        placeholder="Search product by name or SKU..."
+                        oninput="handleMoProductSearchInput(this.value)" />
+                      <button type="button" class="btn-admin-primary"
+                        onclick="searchProductsForManualOrder()">Search</button>
+                    </div>
+                    <div id="moProductSearchResults"
+                      style="max-height:200px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; margin-bottom:15px; display:none; background:white;">
+                    </div>
+
+                    <div class="admin-table-wrapper">
+                      <table class="admin-table mo-product-table">
+                        <thead>
+                          <tr>
+                            <th>Product</th>
+                            <th>Variant</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody id="moSelectedItemsBody">
+                          <tr>
+                            <td colspan="6" style="text-align:center; padding:20px; color:#999;">No products added yet
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  <!-- Delivery & Payment -->
+                  <div class="form-group full">
+                    <h3 style="margin-top:20px; margin-bottom:12px; color:var(--teal)">Order Details</h3>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Delivery Partner</label>
+                    <select class="form-input" id="moDeliveryPartner">
+                      <option value="">Select Partner</option>
+                      <option value="Madhur Courier">Madhur Courier</option>
+                      <option value="Delhivery">Delhivery</option>
+                      <option value="Skyking">Skyking</option>
+                      <option value="Self Pickup">Self Pickup</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Payment Method</label>
+                    <select class="form-input" id="moPaymentMethod">
+                      <option value="upi">UPI / Online</option>
+                      <option value="cash">Cash in Hand</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Order Status *</label>
+                    <select class="form-input" id="moStatus">
+                      <option value="payment_pending">Payment Pending</option>
+                      <option value="payment_received">Payment Received</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="processing">Processing</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Shipping Cost (₹)</label>
+                    <input type="number" class="form-input" id="moShippingCost" value="0" oninput="updateMoTotals()" />
+                  </div>
+
+                  <div class="form-group full">
+                    <div style="background:#f9f9f9; padding:20px; border-radius:12px; text-align:right">
+                      <div style="font-size:1rem; color:var(--mid); margin-bottom:8px;">Total Weight: <span
+                          id="moWeightDisplay">0.000</span> kg</div>
+                      <div style="font-size:1rem; color:var(--mid)">Subtotal: ₹<span id="moSubtotalDisplay">0</span>
+                      </div>
+                      <div style="font-size:1.2rem; font-weight:700; color:var(--teal); margin-top:8px">Total: ₹<span
+                          id="moTotalDisplay">0</span></div>
+                    </div>
+                  </div>
+
+                  <div class="form-group full">
+                    <label class="form-label">Admin Notes</label>
+                    <textarea class="form-textarea" id="moNotes" placeholder="Any special instructions..."></textarea>
+                  </div>
+
+                  <div class="form-group full">
+                    <button type="submit" class="btn-place-order" id="moSubmitBtn">Create Manual Order</button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- ── PRODUCTS PAGE ── -->
+          <div id="page-products" class="admin-page" style="display:none">
+
+
+
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>All Products <span id="badgeTotalProducts"
+                    style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
+                </h3>
+                <div class="admin-table-tools">
+                  <div style="position:relative">
+                    <input type="text" class="admin-search" id="productSearch" placeholder="Search products…" />
+                  </div>
+                  <button class="btn-admin-primary" onclick="showPage('add-product')">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                      viewBox="0 0 24 24">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Product
+                  </button>
+                </div>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Name</th>
+                      <th>Category</th>
+                      <th>Price</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="productsTableBody">
+                    <tr>
+                      <td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">Loading products…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── FAQS PAGE ── -->
+          <div id="page-faq" class="admin-page" style="display:none">
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>Customer FAQs & Queries</h3>
+                <div class="admin-table-tools">
+                  <button class="btn-outline-gold" onclick="loadAdminFaqs()">🔄 Refresh</button>
+                </div>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Customer Name</th>
+                      <th>Email & Phone</th>
+                      <th>Query</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="faqTableBody">
+                    <tr>
+                      <td colspan="6" style="text-align:center;padding:24px">Loading FAQs...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── BULK ENQUIRIES PAGE ── -->
+          <div id="page-bulk-enquiries" class="admin-page" style="display:none">
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>Bulk Enquiries</h3>
+                <div class="admin-table-tools bulk-enquiry-toolbar">
+                  <div class="search-group" style="position:relative">
+                    <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mid)"
+                      width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" class="admin-search" id="bulkEnquirySearch"
+                      placeholder="Search name/email/phone..." style="padding-left:32px" />
+                  </div>
+
+                  <div class="action-group">
+                    <select class="admin-filter-select" id="bulkStatusFilter">
+                      <option value="all">All Status</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Contacted">Contacted</option>
+                      <option value="Closed">Closed</option>
+                    </select>
+                    <button class="btn-outline-gold" onclick="loadBulkEnquiries()">🔄 Refresh</button>
+                  </div>
+                </div>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Customer</th>
+                      <th>Contact</th>
+                      <th>Email</th>
+                      <th>Products</th>
+                      <th>Message</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bulkEnquiriesTableBody">
+                    <tr>
+                      <td colspan="8" style="text-align:center;padding:24px">Loading enquiries...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── CATEGORIES PAGE ── -->
+
+          <div id="page-categories" class="admin-page" style="display:none">
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>Product Categories <span id="badgeTotalCategories"
+                    style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
+                </h3>
+                <div class="admin-table-tools">
+                  <div style="position:relative">
+                    <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mid)"
+                      width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                    <input type="text" class="admin-search" id="categorySearch" placeholder="Search categories…"
+                      style="padding-left:32px" />
+                  </div>
+                  <button class="btn-admin-primary" onclick="openCategoryModal()">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                      viewBox="0 0 24 24">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                    </svg>
+                    Add Category
+                  </button>
+                </div>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Slug</th>
+                      <th>Description</th>
+                      <th>Status</th>
+                      <th>Hierarchy</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="categoriesTableBody">
+                    <tr>
+                      <td colspan="5" style="text-align:center;padding:32px;color:var(--mid)">Loading categories…</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── INVENTORY PAGE ── -->
+          <div id="page-inventory" class="admin-page" style="display:none">
+            <div class="admin-table-section">
+              <div class="admin-table-header">
+                <h3>Stock Alerts & Inventory</h3>
+                <div class="admin-table-tools">
+                  <div style="position:relative">
+                    <input type="text" class="admin-search" id="inventorySearch" placeholder="Search inventory…" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-table-section" style="border-left: 4px solid #C62828; margin-bottom: 24px;">
+              <div class="admin-table-header">
+                <h3 style="color:#C62828">🚫 Out of Stock</h3>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Name / Variant</th>
+                      <th>Category</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="outOfStockTableBody">
+                    <tr>
+                      <td colspan="4" style="text-align:center;padding:24px;color:var(--mid)">Loading...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="admin-table-section" style="border-left: 4px solid #E65100;">
+              <div class="admin-table-header">
+                <h3 style="color:#E65100">⚠️ Low Stock (10 or less)</h3>
+              </div>
+              <div class="admin-table-wrapper">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Image</th>
+                      <th>Name / Variant</th>
+                      <th>Category</th>
+                      <th>Stock Left</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="lowStockTableBody">
+                    <tr>
+                      <td colspan="5" style="text-align:center;padding:24px;color:var(--mid)">Loading...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── ADD/EDIT PRODUCT PAGE ── -->
+          <div id="page-add-product" class="admin-page" style="display:none">
+            <div class="checkout-form-section" style="max-width:700px">
+              <h2 id="productFormTitle">Add New Product</h2>
+              <input type="hidden" id="editProductId" />
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label class="form-label">Product Name *</label>
+                  <input type="text" class="form-input" id="pName" placeholder="e.g. Royal Sherwani Set" />
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Categories * (Select one or more)</label>
+                  <div class="category-search-wrapper" style="margin-bottom: 10px;">
+                    <input type="text" id="pCategorySearch" class="form-input" placeholder="Search categories..."
+                      oninput="filterCategoriesInForm()" style="margin-bottom: 8px;" />
+                  </div>
+                  <div id="pCategoriesContainer"
+                    style="max-height: 180px; overflow-y: auto; border: 1px solid var(--light-gray); border-radius: 4px; padding: 12px; background: white; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;">
+                    <div style="font-size: 0.8rem; color: var(--mid);">Loading categories...</div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Selling Price (₹) *</label>
+                  <input type="number" class="form-input" id="pPrice" placeholder="1999" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">MRP (₹)</label>
+                  <div class="admin-input-group">
+                    <input type="number" class="form-input" id="pMrp" placeholder="2499" min="0" />
+                    <button type="button" onclick="openBaseBulkModal()" class="btn-admin-primary" id="btnBaseBulkPrice">
+                      Bulk Pricing
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Weight (kg) *</label>
+                  <input type="number" class="form-input" id="pWeight" placeholder="1.250" min="0" step="0.001" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Unit *</label>
+                  <select class="form-input" id="pUnit">
+                    <option value="pcs">pcs</option>
+                    <option value="kg">kg</option>
+                    <option value="m">m</option>
+                    <option value="packet">packet</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Stock *</label>
+                  <input type="number" class="form-input" id="pStock" placeholder="999" min="0" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Min Order Quantity *</label>
+                  <input type="number" class="form-input" id="pMinQuantity" placeholder="1" min="1" value="1" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">SKU (Optional)</label>
+                  <input type="text" class="form-input" id="pSku" placeholder="SHW-001" />
+                </div>
+                <div class="form-group">
+                  <label class="form-label">HSN (Optional)</label>
+                  <input type="text" class="form-input" id="pHsn" placeholder="e.g. 6204" />
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Description *</label>
+                  <textarea class="form-textarea" id="pDescription" placeholder="Describe the product…"
+                    style="min-height:100px"></textarea>
+                </div>
+                <div class="form-group full">
+                  <label class="form-label">Tags (comma separated)</label>
+                  <input type="text" class="form-input" id="pTags" placeholder="wedding, traditional, festive" />
+                </div>
+
+                <div class="form-group full">
+                  <label class="form-label">Available Colors (comma separated)</label>
+                  <input type="text" class="form-input" id="pColors" placeholder="Red, Blue, Green" />
+                </div>
+
+                <!-- Variations -->
+                <div class="form-group full"
+                  style="background:var(--cream);padding:16px;border-radius:8px;border:1px solid rgba(200,135,58,0.2);box-sizing:border-box; min-width:0;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <label class="form-label" style="margin:0">Size & Price Variations</label>
+                    <button type="button" onclick="addVariationRow()" class="btn-admin-primary"
+                      style="padding:4px 10px;font-size:0.75rem">
+                      + Add Size
+                    </button>
+                  </div>
+                  <div style="width:100%; overflow-x:auto; padding-bottom:4px;">
+                    <div id="variationsContainer" class="variations-dynamic-list">
+                      <!-- JS injects rows here -->
+                      <div style="font-size:0.8rem;color:var(--mid);text-align:center;padding:10px"
+                        id="noVariationsMsg">No sizes added. Product will use base price.</div>
+                    </div>
+                  </div>
+                </div>
+
+
+                <div class="form-group full">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="pFeatured" style="width:16px;height:16px;accent-color:var(--teal)" />
+                    <span class="form-label" style="margin:0">Mark as Featured Product</span>
+                  </label>
+                </div>
+                <div class="form-group full">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="pActive" checked
+                      style="width:16px;height:16px;accent-color:var(--teal)" />
+                    <span class="form-label" style="margin:0">Active (visible on store)</span>
+                  </label>
+                </div>
+
+                <!-- Image Upload -->
+                <div class="form-group full">
+                  <label class="form-label">Product Images</label>
+                  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('imageFileInput').click()">
+                    <div class="upload-icon">📷</div>
+                    <p>Click to upload product images</p>
+                    <span>JPG, PNG, WebP — Max 5MB each</span>
+                  </div>
+                  <input type="file" id="imageFileInput" multiple accept="image/*" style="display:none" />
+                  <div class="img-preview-grid" id="imgPreviewGrid"></div>
+
+                  <div class="admin-input-group" style="margin-top:12px">
+                    <input type="url" class="form-input" id="imageUrlInput" placeholder="Or paste image URL…" />
+                    <button type="button" onclick="addImageByUrl()" class="btn-admin-primary">Add URL</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-product-actions" style="display:flex; flex-wrap:wrap; gap:12px; margin-top:24px;">
+                <button class="btn-admin-primary" id="saveProductBtn" style="flex:1; min-width:150px;">
+                  <span id="saveProductText">Save Product</span>
+                </button>
+                <button type="button" onclick="cancelProductEdit()" class="btn-admin-secondary"
+                  style="flex:1; min-width:150px;">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── FESTIVE SEASON PAGE ── -->
+          <div id="page-festive" class="admin-page" style="display:none">
+            <div class="checkout-form-section" style="max-width:800px">
+              <h2>Manage Festive Season</h2>
+              <p style="color:var(--mid);margin-bottom:24px">Control the special festive displays on the landing page.
+              </p>
+
+              <div class="form-group full"
+                style="background:var(--white);padding:20px;border-radius:12px;border:1px solid rgba(200,135,58,0.1);margin-bottom:24px">
+                <label style="display:flex;align-items:center;gap:12px;cursor:pointer">
+                  <input type="checkbox" id="festiveEnabled" style="width:20px;height:20px;accent-color:var(--teal)" />
+                  <span style="font-weight:600;color:var(--teal-dark)">Enable Festive Season Section</span>
+                </label>
+              </div>
+
+              <div class="admin-table-section" style="margin-bottom:24px">
+                <div class="admin-table-header">
+                  <h3>Sale Messages (Top Carousel)</h3>
+                  <button class="btn-admin-primary" onclick="addSaleMessageRow()">+ Add Line</button>
+                </div>
+                <div id="saleMessagesContainer" style="display:flex;flex-direction:column;gap:10px;padding:20px">
+                  <!-- JS injects rows here -->
+                </div>
+              </div>
+
+              <div class="admin-table-section">
+                <div class="admin-table-header">
+                  <h3>Select Festive Products</h3>
+                  <div class="admin-table-tools">
+                    <input type="text" class="admin-search" id="festiveProductSearch"
+                      placeholder="Search products to add..." oninput="searchProductsForFestive()" />
+                  </div>
+                </div>
+                <div id="festiveSearchDropdown" class="multi-select-dropdown"
+                  style="position:static;display:none;width:100%;max-height:200px;border:1px solid rgba(200,135,58,0.1);border-top:none">
+                  <!-- Search results here -->
+                </div>
+                <div class="admin-table-wrapper">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="festiveProductsTableBody">
+                      <!-- Selected products here -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div style="margin-top:32px;display:flex;gap:16px">
+                <button class="btn-admin-primary" onclick="saveFestiveSettings()" style="flex:1;padding:14px">Save All
+                  Changes</button>
+                <button class="btn-admin-secondary" onclick="loadFestiveSettings()" style="flex:1">Reset</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ── REGISTRATION REQUESTS PAGE ── -->
+        <div id="page-registration-requests" class="admin-page" style="display:none">
+          <div class="admin-table-section">
+            <div class="admin-table-header">
+              <h3>Registration Requests <span id="badgeRegRequests"
+                  style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
+              </h3>
+              <div class="admin-table-tools">
+                <select class="admin-filter-select" id="regStatusFilter" onchange="loadRegistrationRequests()">
+                  <option value="all">All Status</option>
+                  <option value="pending" selected>Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <button class="btn-outline-gold" onclick="loadRegistrationRequests()">🔄 Refresh</button>
+              </div>
+            </div>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Business Name</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="regRequestsTableBody">
+                  <tr>
+                    <td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">Loading registration
+                      requests…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── LOGIN REQUESTS PAGE ── -->
+        <div id="page-login-requests" class="admin-page" style="display:none">
+          <div class="admin-table-section">
+            <div class="admin-table-header">
+              <h3>Login Requests <span id="badgeLoginRequests"
+                  style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
+              </h3>
+              <div class="admin-table-tools">
+                <select class="admin-filter-select" id="loginStatusFilter" onchange="loadLoginRequests()">
+                  <option value="all">All Status</option>
+                  <option value="pending" selected>Pending</option>
+                  <option value="approved">Approved</option>
+                </select>
+                <button class="btn-outline-gold" onclick="loadLoginRequests()">🔄 Refresh</button>
+              </div>
+            </div>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Business Name</th>
+                    <th>Contact</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="loginRequestsTableBody">
+                  <tr>
+                    <td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">Loading login requests…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── AUTHORISED USERS PAGE ── -->
+        <div id="page-users" class="admin-page" style="display:none">
+          <div class="admin-table-section">
+            <div class="admin-table-header">
+              <h3>Authorised Users <span id="badgeUsers"
+                  style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
+              </h3>
+              <div class="admin-table-tools">
+                <button class="btn-outline-gold" onclick="loadUsers()">🔄 Refresh</button>
+              </div>
+            </div>
+            <div class="admin-table-wrapper">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Date Joined</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Business Name</th>
+                    <th>Contact</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                  <tr>
+                    <td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">Loading users…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Order Detail Modal -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="orderModalTitle">Order Details</h3>
+        <button class="modal-close" onclick="closeModal('orderModal')">✕</button>
+      </div>
+      <div class="modal-body" id="orderModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-header">
+        <h3 style="color:#C62828">Confirm Delete</h3>
+        <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--mid)">Are you sure you want to delete this product? This action cannot be undone.</p>
+        <div style="display:flex;gap:12px;margin-top:20px">
+          <button id="confirmDeleteBtn"
+            style="flex:1;padding:10px 20px;background:#C62828;color:white;border-radius:var(--radius-sm);font-weight:600;font-family:var(--font-body);font-size:.84rem">
+            Yes, Delete
+          </button>
+          <button onclick="closeModal('deleteModal')" class="btn-admin-secondary" style="flex:1">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category Modal -->
+  <div class="modal-overlay" id="categoryModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header">
+        <h3 id="categoryModalTitle">Add Category</h3>
+        <button class="modal-close" onclick="closeModal('categoryModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="categoryForm" onsubmit="event.preventDefault(); saveCategory()">
+          <input type="hidden" id="editCategoryId" />
+          <div class="form-group full">
+            <label class="form-label">Category Name *</label>
+            <input type="text" class="form-input" id="catName" placeholder="e.g. Wedding Wear" required />
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" id="catDescription" placeholder="Optional description…"
+              style="min-height:80px"></textarea>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Parent Category</label>
+            <select class="form-input" id="catParent">
+              <option value="">None (Top Level)</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Display Mode</label>
+            <select class="form-input" id="catDisplayType">
+              <option value="card">Regular Card Display (Default)</option>
+              <option value="tabular">Tabular (Form) Display</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Category Image</label>
+            <div class="upload-zone" id="catUploadZone" onclick="document.getElementById('catImageInput').click()">
+              <div class="upload-icon">📷</div>
+              <p>Click to upload category image</p>
+            </div>
+            <input type="file" id="catImageInput" accept="image/*" style="display:none"
+              onchange="handleCatImageUpload(event)" />
+            <div class="img-preview-grid" id="catImgPreview"></div>
+          </div>
+          <div class="form-group full">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="catActive" checked style="width:16px;height:16px;accent-color:var(--teal)" />
+              <span class="form-label" style="margin:0">Active (Visible in shop)</span>
+            </label>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:20px">
+            <button type="submit" class="btn-admin-primary" id="saveCategoryBtn" style="flex:1">
+              Save Category
+            </button>
+            <button type="button" onclick="closeModal('categoryModal')" class="btn-admin-secondary" style="flex:1">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="variationBulkModal">
+    <div class="modal" style="max-width:550px">
+      <div class="modal-header">
+        <h3 id="varBulkModalTitle">Bulk Pricing for Size: <span id="varSizeLabel"></span></h3>
+        <button class="modal-close" onclick="closeModal('variationBulkModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="varBulkContainer" class="variations-dynamic-list" style="margin-bottom: 20px;">
+          <!-- Tiers injected here -->
+        </div>
+        <button type="button" onclick="addVarBulkRow()" class="btn-admin-primary"
+          style="width:100%; margin-bottom: 20px;">
+          + Add Quantity Tier
+        </button>
+        <div style="display:flex;gap:12px">
+          <button type="button" onclick="saveVariationBulkPrices()" class="btn-admin-primary" style="flex:1">
+            Apply to Size
+          </button>
+          <button type="button" onclick="closeModal('variationBulkModal')" class="btn-admin-secondary" style="flex:1">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Registration Request Detail Modal -->
+  <div class="modal-overlay" id="regRequestModal">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <h3>Registration Request Details</h3>
+        <button class="modal-close" onclick="closeModal('regRequestModal')">✕</button>
+      </div>
+      <div class="modal-body" id="regRequestModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Login Request Detail Modal -->
+  <div class="modal-overlay" id="loginRequestModal">
+    <div class="modal" style="max-width:600px">
+      <div class="modal-header">
+        <h3>Login Request Details</h3>
+        <button class="modal-close" onclick="closeModal('loginRequestModal')">✕</button>
+      </div>
+      <div class="modal-body" id="loginRequestModalBody"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/cart.js?v=1.0.3"></script>
+  <script src="/js/admin.js?v=1.0.3"></script>
+</body>
+
+</html>

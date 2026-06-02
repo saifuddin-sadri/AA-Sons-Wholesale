@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login / Register — A.A & Sons Wholesale Portal</title>
+  <meta name="description" content="Login or register to access the A.A & Sons wholesale portal. Admin approval required." />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --teal: #1B5E4B;
+      --teal-dark: #144A3B;
+      --teal-light: #2A7A63;
+      --gold: #C8873A;
+      --gold-light: #D4A056;
+      --cream: #F5EDD6;
+      --cream-dark: #E8DFC8;
+      --dark: #1a1a2e;
+      --mid: #6b7280;
+      --light-gray: #e5e7eb;
+      --white: #ffffff;
+      --font-display: 'Cormorant Garamond', Georgia, serif;
+      --font-body: 'Poppins', -apple-system, sans-serif;
+      --radius: 16px;
+      --radius-sm: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-body);
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0f3d2e 0%, #1B5E4B 30%, #1a4a3a 60%, #0d2e22 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Animated background pattern */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(200,135,58,0.08) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(200,135,58,0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(245,237,214,0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Floating decorative elements */
+    .floating-decor {
+      position: fixed;
+      border-radius: 50%;
+      opacity: 0.06;
+      animation: float 20s infinite ease-in-out;
+      pointer-events: none;
+    }
+    .floating-decor:nth-child(1) { width: 300px; height: 300px; background: var(--gold); top: -50px; right: -80px; animation-delay: 0s; }
+    .floating-decor:nth-child(2) { width: 200px; height: 200px; background: var(--cream); bottom: -40px; left: -60px; animation-delay: 5s; }
+    .floating-decor:nth-child(3) { width: 150px; height: 150px; background: var(--gold); top: 50%; left: 10%; animation-delay: 10s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      33% { transform: translateY(-20px) rotate(5deg); }
+      66% { transform: translateY(10px) rotate(-3deg); }
+    }
+
+    .auth-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      margin: 20px;
+    }
+
+    /* Logo section */
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .auth-logo img {
+      height: 64px;
+      margin-bottom: 12px;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+    }
+
+    .auth-logo h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      color: var(--cream);
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    .auth-logo p {
+      color: rgba(245,237,214,0.5);
+      font-size: 0.82rem;
+      margin-top: 4px;
+      font-weight: 300;
+    }
+
+    /* Glass card */
+    .auth-card {
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(20px);
+      border-radius: var(--radius);
+      box-shadow:
+        0 25px 60px rgba(0,0,0,0.3),
+        0 0 0 1px rgba(255,255,255,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+      overflow: hidden;
+    }
+
+    /* Tab switcher */
+    .auth-tabs {
+      display: flex;
+      background: #f8f5f0;
+      border-bottom: 1px solid rgba(200,135,58,0.1);
+    }
+
+    .auth-tab {
+      flex: 1;
+      padding: 16px;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--mid);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      background: none;
+      border: none;
+      font-family: var(--font-body);
+    }
+
+    .auth-tab::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 50%;
+      width: 0; height: 3px;
+      background: linear-gradient(90deg, var(--teal), var(--gold));
+      border-radius: 3px 3px 0 0;
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+    }
+
+    .auth-tab.active {
+      color: var(--teal);
+      background: white;
+    }
+
+    .auth-tab.active::after {
+      width: 60%;
+    }
+
+    .auth-tab:hover:not(.active) {
+      color: var(--teal-light);
+      background: rgba(255,255,255,0.5);
+    }
+
+    /* Form content */
+    .auth-form-wrap {
+      padding: 32px;
+    }
+
+    .auth-panel {
+      display: none;
+      animation: fadeSlideIn 0.35s ease-out;
+    }
+
+    .auth-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--dark);
+      margin-bottom: 6px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--light-gray);
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      font-family: var(--font-body);
+      color: var(--dark);
+      transition: all 0.25s ease;
+      background: white;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(27,94,75,0.1);
+    }
+
+    .form-input::placeholder {
+      color: #bbb;
+    }
+
+    .form-input.error {
+      border-color: #C62828;
+      box-shadow: 0 0 0 3px rgba(198,40,40,0.1);
+    }
+
+    /* File upload area */
+    .upload-area {
+      border: 2px dashed var(--light-gray);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #fafafa;
+    }
+
+    .upload-area:hover {
+      border-color: var(--teal);
+      background: rgba(27,94,75,0.03);
+    }
+
+    .upload-area.has-file {
+      border-color: var(--teal);
+      background: rgba(27,94,75,0.05);
+    }
+
+    .upload-area .upload-icon {
+      font-size: 1.8rem;
+      margin-bottom: 6px;
+    }
+
+    .upload-area p {
+      font-size: 0.82rem;
+      color: var(--mid);
+    }
+
+    .upload-area .file-name {
+      font-size: 0.78rem;
+      color: var(--teal);
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    .upload-preview {
+      margin-top: 10px;
+      max-width: 100%;
+      max-height: 120px;
+      border-radius: 6px;
+      object-fit: cover;
+    }
+
+    /* Submit button */
+    .btn-auth {
+      width: 100%;
+      padding: 14px 24px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 0.92rem;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .btn-auth-primary {
+      background: linear-gradient(135deg, var(--teal), var(--teal-light));
+      color: white;
+      box-shadow: 0 4px 15px rgba(27,94,75,0.3);
+    }
+
+    .btn-auth-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(27,94,75,0.4);
+    }
+
+    .btn-auth-primary:active { transform: translateY(0); }
+
+    .btn-auth-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Messages */
+    .auth-message {
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 0.82rem;
+      margin-bottom: 16px;
+      display: none;
+      animation: fadeSlideIn 0.3s ease;
+    }
+
+    .auth-message.error {
+      display: block;
+      background: #FEE2E2;
+      color: #991B1B;
+      border: 1px solid #FECACA;
+    }
+
+    .auth-message.success {
+      display: block;
+      background: #D1FAE5;
+      color: #065F46;
+      border: 1px solid #A7F3D0;
+    }
+
+    .auth-message.info {
+      display: block;
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    /* Footer text */
+    .auth-footer {
+      text-align: center;
+      padding: 20px 32px;
+      background: #fafaf8;
+      border-top: 1px solid rgba(200,135,58,0.08);
+    }
+
+    .auth-footer p {
+      font-size: 0.78rem;
+      color: var(--mid);
+    }
+
+    .auth-footer a {
+      color: var(--teal);
+      font-weight: 600;
+      text-decoration: none;
+    }
+
+    .auth-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Success screen */
+    .success-screen {
+      display: none;
+      text-align: center;
+      padding: 40px 32px;
+    }
+
+    .success-screen.visible {
+      display: block;
+      animation: fadeSlideIn 0.4s ease;
+    }
+
+    .success-icon {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+    }
+
+    .success-screen h3 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      color: var(--teal);
+      margin-bottom: 12px;
+    }
+
+    .success-screen p {
+      font-size: 0.88rem;
+      color: var(--mid);
+      line-height: 1.6;
+      max-width: 380px;
+      margin: 0 auto;
+    }
+
+    .success-screen .btn-auth {
+      margin-top: 24px;
+    }
+
+    /* Password strength */
+    .password-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .password-strength .bar {
+      height: 3px;
+      flex: 1;
+      border-radius: 3px;
+      background: var(--light-gray);
+      transition: background 0.3s;
+    }
+
+    .password-strength.weak .bar:nth-child(1) { background: #EF4444; }
+    .password-strength.medium .bar:nth-child(1),
+    .password-strength.medium .bar:nth-child(2) { background: #F59E0B; }
+    .password-strength.strong .bar:nth-child(1),
+    .password-strength.strong .bar:nth-child(2),
+    .password-strength.strong .bar:nth-child(3) { background: #10B981; }
+
+    /* Responsive */
+    @media (max-width: 520px) {
+      .auth-container { margin: 12px; }
+      .auth-form-wrap { padding: 24px 20px; }
+      .auth-logo h1 { font-size: 1.6rem; }
+    }
+
+    /* Login approved banner */
+    .approved-banner {
+      background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(27,94,75,0.1));
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .approved-banner.visible {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: fadeSlideIn 0.4s ease;
+    }
+
+    .approved-banner .icon { font-size: 1.3rem; }
+
+    .approved-banner .text {
+      font-size: 0.82rem;
+      color: #065F46;
+      font-weight: 500;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Floating decorative elements -->
+  <div class="floating-decor"></div>
+  <div class="floating-decor"></div>
+  <div class="floating-decor"></div>
+
+  <div class="auth-container">
+    <!-- Logo -->
+    <div class="auth-logo">
+      <img src="/logo.png" alt="A.A & Sons" onerror="this.style.display='none'" />
+      <h1>A.A & Sons</h1>
+      <p>Wholesale Portal — Admin Approved Access</p>
+    </div>
+
+    <!-- Auth Card -->
+    <div class="auth-card">
+      <!-- Tabs -->
+      <div class="auth-tabs" id="authTabs">
+        <button class="auth-tab active" data-tab="login" id="tabLogin">Login</button>
+        <button class="auth-tab" data-tab="register" id="tabRegister">Register</button>
+      </div>
+
+      <!-- Forms Container -->
+      <div class="auth-form-wrap">
+
+        <!-- ═══ LOGIN PANEL ═══ -->
+        <div class="auth-panel active" id="panelLogin">
+          <div class="approved-banner" id="approvedBanner">
+            <span class="icon">✅</span>
+            <span class="text">Your login has been approved! Enter your credentials to access the portal.</span>
+          </div>
+
+          <div class="auth-message" id="loginMessage"></div>
+
+          <form id="loginForm">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input" id="loginEmail" placeholder="your@email.com" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+            </div>
+            <button type="submit" class="btn-auth btn-auth-primary" id="loginBtn">
+              <span id="loginBtnText">Send Login Request</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Login Success Screen -->
+        <div class="success-screen" id="loginSuccess">
+          <div class="success-icon">📨</div>
+          <h3>Login Request Sent!</h3>
+          <p>Your login request has been sent to the admin. You will receive an email with a login link once approved.</p>
+          <button class="btn-auth btn-auth-primary" onclick="resetLoginForm()">
+            ← Back to Login
+          </button>
+        </div>
+
+        <!-- ═══ REGISTER PANEL ═══ -->
+        <div class="auth-panel" id="panelRegister">
+          <div class="auth-message" id="registerMessage"></div>
+
+          <form id="registerForm">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" class="form-input" id="regName" placeholder="e.g. Rahul Sharma" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input type="email" class="form-input" id="regEmail" placeholder="your@email.com" required autocomplete="email" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password *</label>
+              <input type="password" class="form-input" id="regPassword" placeholder="Min. 6 characters" required minlength="6" />
+              <div class="password-strength" id="passwordStrength">
+                <div class="bar"></div>
+                <div class="bar"></div>
+                <div class="bar"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Business Name *</label>
+              <input type="text" class="form-input" id="regBusinessName" placeholder="e.g. Sharma Textiles" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Number *</label>
+              <input type="tel" class="form-input" id="regContactNumber" placeholder="+91 XXXXX XXXXX" required />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Business Card (Optional)</label>
+              <div class="upload-area" id="uploadArea" onclick="document.getElementById('regBusinessCard').click()">
+                <div class="upload-icon">📇</div>
+                <p>Click to upload business card image</p>
+                <p style="font-size:0.72rem; color:#bbb; margin-top:4px;">JPG, PNG — Max 5MB</p>
+                <div class="file-name" id="fileName" style="display:none"></div>
+                <img class="upload-preview" id="uploadPreview" style="display:none" />
+              </div>
+              <input type="file" id="regBusinessCard" accept="image/*" style="display:none" />
+            </div>
+            <button type="submit" class="btn-auth btn-auth-primary" id="registerBtn">
+              <span id="registerBtnText">Send Registration Request</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Register Success Screen -->
+        <div class="success-screen" id="registerSuccess">
+          <div class="success-icon">🎉</div>
+          <h3>Request Submitted!</h3>
+          <p>Your registration request has been sent to the admin for approval. You will receive an email once your account is approved.</p>
+          <button class="btn-auth btn-auth-primary" onclick="switchTab('login')">
+            ← Go to Login
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="auth-footer">
+        <p>© 2026 A.A & Sons — Marriage Goods & Bhagwan Poshak, Indore</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/auth.js?v=1.0.3"></script>
+</body>
+
+</html>

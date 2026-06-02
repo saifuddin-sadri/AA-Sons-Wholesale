@@ -1,0 +1,18 @@
+{
+  "name": "aa-sons-website",
+  "version": "1.0.0",
+  "description": "A.A & Sons Website - Marriage Goods & Devotional wear",
+  "scripts": {
+    "install-backend": "cd backend && npm install",
+    "install-all": "npm install && npm run install-backend",
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev"
+  },
+  "keywords": [
+    "marriage",
+    "traditional",
+    "ecommerce"
+  ],
+  "author": "A.A & Sons",
+  "license": "ISC"
+}
