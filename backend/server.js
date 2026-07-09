@@ -30,47 +30,52 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ─── SEO & System Routes (MUST be above static/404) ──────
-app.get('/sitemap.xml', (req, res) => {
-  res.header('Content-Type', 'application/xml');
-  res.sendFile(path.resolve(__dirname, '../frontend/sitemap.xml'));
-});
+// ─── Detect environment ────────────────────────────────
+const isVercel = !!process.env.VERCEL;
 
-app.get('/robots.txt', (req, res) => {
-  res.header('Content-Type', 'text/plain');
-  res.sendFile(path.resolve(__dirname, '../frontend/robots.txt'));
-});
+// ─── SEO & System Routes (only for local/non-Vercel) ───
+if (!isVercel) {
+  app.get('/sitemap.xml', (req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.sendFile(path.resolve(__dirname, '../frontend/sitemap.xml'));
+  });
 
-// ─── Serve Frontend Static Files (with aggressive caching for perf) ───
-// CSS/JS/images: cache 30 days (improves Core Web Vitals & LCP)
-// This runs BEFORE the SEO route so HTML pages never get cached
-app.use(express.static(path.join(__dirname, '../frontend'), {
-  maxAge: '30d',
-  etag: true,
-  lastModified: true,
-  setHeaders: (res, filePath) => {
-    // HTML pages: no-cache (always fresh for crawlers)
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
+  app.get('/robots.txt', (req, res) => {
+    res.header('Content-Type', 'text/plain');
+    res.sendFile(path.resolve(__dirname, '../frontend/robots.txt'));
+  });
+
+  // ─── Serve Frontend Static Files (with aggressive caching for perf) ───
+  // CSS/JS/images: cache 30 days (improves Core Web Vitals & LCP)
+  // This runs BEFORE the SEO route so HTML pages never get cached
+  app.use(express.static(path.join(__dirname, '../frontend'), {
+    maxAge: '30d',
+    etag: true,
+    lastModified: true,
+    setHeaders: (res, filePath) => {
+      // HTML pages: no-cache (always fresh for crawlers)
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // XML / TXT: short cache
+      else if (filePath.endsWith('.xml') || filePath.endsWith('.txt')) {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+      // Static assets: JS and CSS should be checked more often if not hashed
+      else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+      // Images and other media: can stay long-term
+      else {
+        res.setHeader('Cache-Control', 'public, max-age=2592000');
+      }
     }
-    // XML / TXT: short cache
-    else if (filePath.endsWith('.xml') || filePath.endsWith('.txt')) {
-      res.setHeader('Cache-Control', 'public, max-age=3600');
-    }
-    // Static assets: JS and CSS should be checked more often if not hashed
-    else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    }
-    // Images and other media: can stay long-term
-    else {
-      res.setHeader('Cache-Control', 'public, max-age=2592000');
-    }
-  }
-}));
+  }));
+}
 
 // ─── API Routes ─────────────────────────────────────────
 app.use('/api/auth',       require('./routes/auth'));
@@ -86,25 +91,27 @@ app.use('/api/promotions', require('./routes/promotion'));
 app.use('/api/notifications', require('./routes/notifications'));
 
 
-// ─── Serve Frontend Pages ───────────────────────────────
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
-app.get('/products',             (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/products.html')));
-app.get('/product',              (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/product-detail.html')));
-app.get('/product-detail',       (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/product-detail.html')));
-app.get('/cart',                 (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/cart.html')));
-app.get('/checkout',             (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/checkout.html')));
-app.get('/payment',              (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/payment.html')));
-app.get('/order-success',        (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/order-success.html')));
-app.get('/faq',                  (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/faq.html')));
-app.get('/invoice',              (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/invoice.html')));
-app.get('/update-order',         (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/update-order.html')));
-app.get('/admin-order-details',  (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin-order-details.html')));
-app.get('/worker-bill',          (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/worker-bill.html')));
-app.get('/bill',                 (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/bill.html')));
-app.get('/my-orders',            (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/my-orders.html')));
-app.get('/admin',                (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin.html')));
-app.get('/admin-bulk-enquiries', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin-bulk-enquiries.html')));
-app.get('/auth',                (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/auth.html')));
+// ─── Serve Frontend Pages (only for local/non-Vercel) ───
+if (!isVercel) {
+  app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../frontend/index.html')));
+  app.get('/products',             (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/products.html')));
+  app.get('/product',              (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/product-detail.html')));
+  app.get('/product-detail',       (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/product-detail.html')));
+  app.get('/cart',                 (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/cart.html')));
+  app.get('/checkout',             (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/checkout.html')));
+  app.get('/payment',              (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/payment.html')));
+  app.get('/order-success',        (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/order-success.html')));
+  app.get('/faq',                  (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/faq.html')));
+  app.get('/invoice',              (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/invoice.html')));
+  app.get('/update-order',         (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/update-order.html')));
+  app.get('/admin-order-details',  (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin-order-details.html')));
+  app.get('/worker-bill',          (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/worker-bill.html')));
+  app.get('/bill',                 (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/bill.html')));
+  app.get('/my-orders',            (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/my-orders.html')));
+  app.get('/admin',                (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin.html')));
+  app.get('/admin-bulk-enquiries', (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/admin-bulk-enquiries.html')));
+  app.get('/auth',                (req, res) => res.sendFile(path.join(__dirname, '../frontend/pages/auth.html')));
+}
 
 
 // ─── Improved 404 Handler ────────────────────────────────
@@ -119,8 +126,12 @@ app.use((req, res) => {
     return res.status(404).send('File Not Found');
   }
 
-  // 3. Fallback to index.html for Single Page Application routing
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  // 3. Fallback to index.html for Single Page Application routing (local only)
+  if (!isVercel) {
+    return res.sendFile(path.join(__dirname, '../frontend/index.html'));
+  }
+
+  res.status(404).send('Not Found');
 });
 
 // ─── Global Error Handler ────────────────────────────────
@@ -136,28 +147,30 @@ app.use((err, req, res, next) => {
 process.on('uncaughtException',  err => { console.error('💥 Uncaught Exception:', err); });
 process.on('unhandledRejection', err => { console.error('💥 Unhandled Rejection:', err); });
 
-// ─── Database + Start ────────────────────────────────────
-mongoose.connect(process.env.MONGODB_URI)
-  .then(async () => {
-    console.log('✅ MongoDB Connected');
-    
-    try {
-      await seedAdmin();
-      await seedCategories();
-    } catch (err) {
-      console.warn('⚠️ Seeding warning:', err.message);
-    }
+// ─── Database + Start (only when running directly, NOT on Vercel) ───
+if (!isVercel) {
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(async () => {
+      console.log('✅ MongoDB Connected');
+      
+      try {
+        await seedAdmin();
+        await seedCategories();
+      } catch (err) {
+        console.warn('⚠️ Seeding warning:', err.message);
+      }
 
-    const PORT = process.env.PORT || 5000;
-    const HOST = '0.0.0.0';
-    app.listen(PORT, HOST, () => {
-      console.log(`🚀 Server running on ${HOST}:${PORT}`);
+      const PORT = process.env.PORT || 5000;
+      const HOST = '0.0.0.0';
+      app.listen(PORT, HOST, () => {
+        console.log(`🚀 Server running on ${HOST}:${PORT}`);
+      });
+    })
+    .catch(err => {
+      console.error('❌ MongoDB connection failed:', err.message);
+      setTimeout(() => process.exit(1), 1000);
     });
-  })
-  .catch(err => {
-    console.error('❌ MongoDB connection failed:', err.message);
-    setTimeout(() => process.exit(1), 1000);
-  });
+}
 
 // ─── Seed Admin User ─────────────────────────────────────
 async function seedAdmin() {

@@ -4,6 +4,13 @@ const router = express.Router();
 const { upload, cloudinary } = require('../config/cloudinary');
 const { protect, adminOnly } = require('../middleware/auth');
 
+// Helper: extract url and public_id from multer-storage-cloudinary file object
+// Newer versions use `path` and `filename`, older used `url` and `public_id`
+const getFileInfo = (file) => ({
+  url: file.path || file.url || file.secure_url,
+  public_id: file.filename || file.public_id
+});
+
 // Upload single image
 router.post('/image', protect, adminOnly, (req, res, next) => {
   console.log('🖼️  Started image upload request...');
@@ -13,7 +20,7 @@ router.post('/image', protect, adminOnly, (req, res, next) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'No image uploaded' });
     res.json({
       success: true,
-      image: { url: req.file.url, public_id: req.file.public_id }
+      image: getFileInfo(req.file)
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -26,7 +33,7 @@ router.post('/business-card', upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'No image uploaded' });
     res.json({
       success: true,
-      image: { url: req.file.url, public_id: req.file.public_id }
+      image: getFileInfo(req.file)
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -39,7 +46,7 @@ router.post('/payment-proof', upload.single('image'), (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, message: 'No image uploaded' });
     res.json({
       success: true,
-      image: { url: req.file.url, public_id: req.file.public_id }
+      image: getFileInfo(req.file)
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -50,7 +57,7 @@ router.post('/payment-proof', upload.single('image'), (req, res) => {
 router.post('/images', protect, adminOnly, upload.array('images', 5), (req, res) => {
   try {
     if (!req.files?.length) return res.status(400).json({ success: false, message: 'No images uploaded' });
-    const images = req.files.map(f => ({ url: f.url, public_id: f.public_id }));
+    const images = req.files.map(f => getFileInfo(f));
     res.json({ success: true, images });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

@@ -9,8 +9,8 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const storage = CloudinaryStorage({
-  cloudinary: cloudinary,
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary.v2,
   folder: 'aa-sons-products',
   allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
   transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto' }]

@@ -30,10 +30,11 @@
 })();
 
 const API = (() => {
-  // In production (Render), use relative paths. In dev, proxy to local backend.
+  // In production (Vercel) and Vercel dev, use relative paths. In other local dev setups, proxy to local backend on 5001.
   const hostname = window.location.hostname;
-  const isDev = (hostname === 'localhost' || hostname === '127.0.0.1') && window.location.port !== '5001';
-  const BASE = isDev ? 'http://localhost:5001/api' : '/api';
+  const port = window.location.port;
+  const useRelative = (hostname !== 'localhost' && hostname !== '127.0.0.1') || port === '5001' || port === '3000' || port === '5000';
+  const BASE = useRelative ? '/api' : 'http://localhost:5001/api';
 
   const getToken = () => localStorage.getItem('aa_token');
   const getUser  = () => { try { return JSON.parse(localStorage.getItem('aa_user')); } catch { return null; } };
