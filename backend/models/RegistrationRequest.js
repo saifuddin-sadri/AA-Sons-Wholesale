@@ -8,6 +8,12 @@ const registrationRequestSchema = new mongoose.Schema({
   businessName:  { type: String, required: true, trim: true },
   contactNumber: { type: String, required: true, trim: true },
   businessCard:  { type: String, default: '' }, // Cloudinary URL
+  address: {
+    street:  { type: String, trim: true },
+    city:    { type: String, trim: true },
+    state:   { type: String, trim: true },
+    pincode: { type: String, trim: true }
+  },
   status:        { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
 }, { timestamps: true });
 

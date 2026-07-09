@@ -119,8 +119,19 @@
     if (!file) return '';
 
     try {
-      const data = await API.uploadImage(file);
-      return data.url || data.secure_url || '';
+      const fd = new FormData();
+      fd.append('image', file);
+      // Use the public business-card endpoint (no auth required)
+      const hostname = window.location.hostname;
+      const isDev = (hostname === 'localhost' || hostname === '127.0.0.1') && window.location.port !== '5001';
+      const base = isDev ? 'http://localhost:5001/api' : '/api';
+      const res = await fetch(`${base}/upload/business-card`, {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      return data.image?.url || '';
     } catch (err) {
       console.error('Upload failed:', err);
       return '';
@@ -200,14 +211,23 @@
     const password = document.getElementById('regPassword').value;
     const businessName = document.getElementById('regBusinessName').value.trim();
     const contactNumber = document.getElementById('regContactNumber').value.trim();
+    const street = document.getElementById('regStreet').value.trim();
+    const city = document.getElementById('regCity').value.trim();
+    const state = document.getElementById('regState').value.trim();
+    const pincode = document.getElementById('regPincode').value.trim();
 
-    if (!name || !email || !password || !businessName || !contactNumber) {
+    if (!name || !email || !password || !businessName || !contactNumber || !street || !city || !state || !pincode) {
       showMessage('registerMessage', 'Please fill in all required fields', 'error');
       return;
     }
 
     if (password.length < 6) {
       showMessage('registerMessage', 'Password must be at least 6 characters', 'error');
+      return;
+    }
+
+    if (!/^\d{6}$/.test(pincode)) {
+      showMessage('registerMessage', 'Please enter a valid 6-digit PIN code', 'error');
       return;
     }
 
@@ -225,7 +245,8 @@
 
       const data = await API.registerRequest({
         name, email, password, businessName, contactNumber,
-        businessCard: cardUrl
+        businessCard: cardUrl,
+        address: { street, city, state, pincode }
       });
 
       if (data.success) {

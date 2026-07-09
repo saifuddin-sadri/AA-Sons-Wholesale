@@ -101,6 +101,7 @@ const API = (() => {
     // Orders
     placeOrder:      (body)   => req('POST', '/orders', body),
     myOrders:        ()       => req('GET',  '/orders/my'),
+    getOrder:        (id)     => req('GET',  `/orders/${id}`),
     adminGetOrders:  (p)      => req('GET',  `/orders/admin/all?${new URLSearchParams(p)}`),
     adminGetOrder:   (id)     => req('GET',  `/orders/admin/${id}`),
     adminUpdateStatus:   (id, b) => req('PATCH', `/orders/admin/${id}/status`, b),

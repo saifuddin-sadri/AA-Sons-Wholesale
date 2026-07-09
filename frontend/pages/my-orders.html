@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Order History — A.A & Sons</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3" />
+  <style>
+    body {
+      background: #fafaf9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .orders-hero {
+      background: linear-gradient(135deg, var(--teal, #1B5E4B) 0%, #154537 100%);
+      color: white;
+      padding: 60px 0;
+      text-align: center;
+    }
+
+    .orders-hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 3rem;
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .orders-hero p {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 8px;
+    }
+
+    .orders-container {
+      max-width: 900px;
+      margin: 40px auto 80px;
+      padding: 0 20px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .order-card {
+      background: white;
+      border: 1px solid rgba(200, 135, 58, 0.15);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+
+    .order-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(27, 94, 75, 0.05);
+      border-color: var(--teal, #1B5E4B);
+    }
+
+    .order-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #f3f3f3;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .order-meta-group {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .order-meta-item {
+      font-size: 0.82rem;
+      color: var(--mid, #6b7280);
+    }
+
+    .order-meta-item strong {
+      color: var(--dark, #1a1a2e);
+      display: block;
+      font-size: 0.95rem;
+      margin-top: 2px;
+    }
+
+    .order-status-badge {
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-placed { background: #e0f2fe; color: #0369a1; }
+    .status-confirmed { background: #e0f8f1; color: #0f766e; }
+    .status-processing { background: #fef3c7; color: #b45309; }
+    .status-shipped { background: #e0e7ff; color: #4338ca; }
+    .status-delivered { background: #d1fae5; color: #065f46; }
+    .status-pending { background: #fee2e2; color: #b91c1c; }
+    .status-cancelled { background: #f3f4f6; color: #4b5563; }
+
+    .order-items-preview {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .preview-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+    }
+
+    .preview-item-name {
+      font-weight: 500;
+      color: var(--dark, #1a1a2e);
+    }
+
+    .preview-item-qty {
+      color: var(--mid, #6b7280);
+    }
+
+    .order-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid #f3f3f3;
+      padding-top: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .order-total-amount {
+      font-size: 0.92rem;
+      color: var(--mid, #6b7280);
+    }
+
+    .order-total-amount strong {
+      color: var(--teal, #1B5E4B);
+      font-size: 1.25rem;
+      margin-left: 6px;
+    }
+
+    .btn-view-invoice {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1.5px solid var(--teal, #1B5E4B);
+      color: var(--teal, #1B5E4B);
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-view-invoice:hover {
+      background: var(--teal, #1B5E4B);
+      color: white;
+    }
+
+    .empty-history-state {
+      text-align: center;
+      padding: 80px 40px;
+      background: white;
+      border-radius: 16px;
+      border: 1px dashed rgba(200, 135, 58, 0.25);
+    }
+
+    .empty-history-icon {
+      font-size: 3.5rem;
+      margin-bottom: 16px;
+    }
+
+    .empty-history-state h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem;
+      margin: 0 0 10px;
+      color: var(--teal, #1B5E4B);
+    }
+
+    .empty-history-state p {
+      color: var(--mid, #6b7280);
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar scrolled">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <img src="/logo.png" alt="A.A & Sons" class="logo-img"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
+        <div class="logo-fallback" style="display:none">
+          <span class="logo-text">A.A <span class="amp">&</span> Sons</span>
+        </div>
+      </a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/products" class="nav-link">Shop</a>
+        <a href="/my-orders" class="nav-link active">My Orders</a>
+      </div>
+      <div class="nav-right">
+        <a href="/cart" class="cart-icon">
+          <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <path d="M16 10a4 4 0 01-8 0" />
+          </svg>
+          <span class="cart-badge" id="cartBadge" style="display: none;">0</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="orders-hero">
+    <div class="container">
+      <h1>My Orders</h1>
+      <p>View your wholesale order status and download invoices</p>
+    </div>
+  </section>
+
+  <section class="orders-container">
+    <!-- Loading skeleton -->
+    <div id="ordersLoading">
+      <p style="text-align: center; color: var(--mid, #6b7280);">Loading order history...</p>
+    </div>
+
+    <!-- Empty history state -->
+    <div id="emptyHistory" style="display: none;" class="empty-history-state animate-in">
+      <div class="empty-history-icon">📦</div>
+      <h2>No Orders Placed Yet</h2>
+      <p>Start browsing our exclusive wholesale catalogs and place your first order.</p>
+      <a href="/products" class="btn-hero-primary" style="display: inline-flex; align-items: center; justify-content: center;">
+        Start Shopping
+      </a>
+    </div>
+
+    <!-- Orders list container -->
+    <div id="ordersList" style="display: none;"></div>
+  </section>
+
+  <footer class="footer" style="margin-top: auto;">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>© 2026 A.A & Sons. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast"></div>
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/cart.js?v=1.0.3"></script>
+  <script src="/js/my-orders.js?v=1.0.3"></script>
+</body>
+
+</html>

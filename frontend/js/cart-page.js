@@ -3,6 +3,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNavbar();
   await renderCart();
   renderRecommendations();
+
+  const toggle = document.getElementById('cartStorePickupToggle');
+  if (toggle) {
+    toggle.checked = sessionStorage.getItem('storePickup') === 'true';
+    toggle.addEventListener('change', (e) => {
+      sessionStorage.setItem('storePickup', e.target.checked ? 'true' : 'false');
+      renderSummary(Cart.get());
+    });
+  }
 });
 
 async function renderCart() {
@@ -162,18 +171,21 @@ function renderSummary(items) {
     totalWeight = 1; // Fallback so shipping isn't 0
   }
   
-  // Round up to nearest kg
-  // Skipping shipping addition so the user sees just subtotal
-  const total = subtotal;
+  const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
+  const shippingEl = document.getElementById('summaryShipping');
+  if (shippingEl) {
+    if (isStorePickup) {
+      shippingEl.textContent = 'FREE (Store Pickup)';
+    } else {
+      shippingEl.textContent = 'Calculated at checkout';
+    }
+  }
 
   document.getElementById('summarySubtotal').textContent = formatRupees(subtotal);
   const weightEl = document.getElementById('summaryWeight');
   if (weightEl) {
     weightEl.textContent = totalWeight.toFixed(3) + ' kg';
   }
-  const shippingEl = document.getElementById('summaryShipping');
-  
-  if (shippingEl) shippingEl.textContent = 'Calculated at checkout';
   document.getElementById('summaryTotal').textContent = formatRupees(subtotal);
 }
 

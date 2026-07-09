@@ -5,46 +5,36 @@ const BRANCH_CITIES = [
   'Salem', 'Siliguri', 'Surat', 'Varanasi', 'Ujjain', 'Dewas', 'Kalyan'
 ];
 
-const INDIAN_STATES = [
-  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
-  "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
-  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
-  "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh",
-  "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir",
-  "Ladakh", "Lakshadweep", "Puducherry"
-];
+let currentUser = null;
+let orderItems = [];
 
-document.addEventListener('DOMContentLoaded', () => {
-  const items = Cart.get();
-  if (!items.length) { window.location.href = '/cart'; return; }
+document.addEventListener('DOMContentLoaded', async () => {
+  orderItems = Cart.get();
+  if (!orderItems.length) {
+    window.location.href = '/cart';
+    return;
+  }
 
-  renderOrderSummary(items);
-  initPlaceOrder(items);
-  initPhoneFormatting();
-  initShippingUpdate(items);
-  initStateAutocomplete();
+  try {
+    const userRes = await API.me();
+    if (userRes && userRes.success && userRes.user) {
+      currentUser = userRes.user;
+      renderCheckoutDetails();
+      renderOrderSummary();
+      initPlaceOrder();
+    } else {
+      throw new Error('Failed to get user profile details');
+    }
+  } catch (err) {
+    showToast('Failed to load user profile. Please login again.', 'error');
+    setTimeout(() => {
+      window.location.href = '/auth';
+    }, 2000);
+  }
 });
 
-function initStateAutocomplete() {
-  const dl = document.getElementById('statesList');
-  if (!dl) return;
-  dl.innerHTML = INDIAN_STATES.map(s => `<option value="${s}">`).join('');
-}
-
-function initShippingUpdate(items) {
-  const cityInput = document.getElementById('shCity');
-  if (cityInput) {
-    cityInput.addEventListener('input', () => renderOrderSummary(items));
-  }
-  const pickupToggle = document.getElementById('storePickupToggle');
-  if (pickupToggle) {
-    pickupToggle.addEventListener('change', () => renderOrderSummary(items));
-  }
-}
-
 function calculateShipping(items, city = '') {
-  const isStorePickup = document.getElementById('storePickupToggle')?.checked;
+  const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
   if (isStorePickup) return 0;
 
   let totalWeight = items.reduce((w, i) => w + (parseFloat(i.weight) || 0) * i.quantity, 0);
@@ -54,58 +44,88 @@ function calculateShipping(items, city = '') {
   return Math.ceil(totalWeight) * rate;
 }
 
+function renderCheckoutDetails() {
+  const container = document.getElementById('checkoutUserDetails');
+  if (!container) return;
 
-function initPhoneFormatting() {
-  const phoneInput = document.getElementById('shPhone');
-  if (!phoneInput) return;
+  const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
 
-  phoneInput.addEventListener('input', (e) => {
-    // Get digits only
-    let digits = e.target.value.replace(/\D/g, '');
-    
-    // If it starts with 91, treat it as the country code
-    if (digits.startsWith('91')) {
-      digits = digits.substring(2);
-    }
-    
-    // Limit to 10 digits
-    if (digits.length > 10) {
-      digits = digits.substring(0, 10);
-    }
-    
-    // Format: +91 + digits
-    e.target.value = digits ? '+91' + digits : '';
-  });
+  if (isStorePickup) {
+    container.innerHTML = `
+      <div style="background: rgba(200, 135, 58, 0.08); padding: 16px; border-radius: 8px; border: 1px solid rgba(200, 135, 58, 0.2);">
+        <p style="font-weight: 700; color: var(--gold); font-size: 1.05rem; margin-bottom: 6px;">🏪 Store Pickup Selected</p>
+        <p>Your order will be prepared and held for pickup at our main branch.</p>
+        <p style="font-size: 0.85rem; margin-top: 8px; color: var(--mid);">
+          <strong>Store Address:</strong> Shop no: 06, Marothiya Bazar, near Bajaj Khana Chowk, Indore (M.P.)
+        </p>
+      </div>
+      <div style="margin-top: 10px;">
+        <p><strong>Contact Person:</strong> ${currentUser.name}</p>
+        <p><strong>Business Name:</strong> ${currentUser.businessName || '—'}</p>
+        <p><strong>Phone:</strong> ${currentUser.contactNumber || currentUser.phone || '—'}</p>
+        <p><strong>Email:</strong> ${currentUser.email}</p>
+      </div>
+    `;
+  } else {
+    const addr = currentUser.address || {};
+    const street = addr.street || '—';
+    const city = addr.city || '—';
+    const state = addr.state || '—';
+    const pincode = addr.pincode || '—';
+
+    container.innerHTML = `
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div>
+          <p style="color: var(--mid); font-size: 0.78rem; text-transform: uppercase; font-weight: 600;">Recipient</p>
+          <p style="font-weight: 600; font-size: 1rem;">${currentUser.name}</p>
+          <p>${currentUser.businessName ? `🏢 ${currentUser.businessName}` : ''}</p>
+        </div>
+        <div>
+          <p style="color: var(--mid); font-size: 0.78rem; text-transform: uppercase; font-weight: 600;">Contact Details</p>
+          <p>📞 ${currentUser.contactNumber || currentUser.phone || '—'}</p>
+          <p>✉️ ${currentUser.email}</p>
+        </div>
+      </div>
+      <div style="margin-top: 14px; padding-top: 14px; border-top: 1px dashed rgba(0,0,0,0.08);">
+        <p style="color: var(--mid); font-size: 0.78rem; text-transform: uppercase; font-weight: 600; margin-bottom: 4px;">Shipping Address</p>
+        <p style="font-weight: 500;">${street}</p>
+        <p>${city}, ${state} — <strong>${pincode}</strong></p>
+      </div>
+    `;
+  }
 }
 
-function renderOrderSummary(items) {
+function renderOrderSummary() {
   const container = document.getElementById('checkoutOrderItems');
-  const city = document.getElementById('shCity')?.value || '';
-  
-  container.innerHTML = items.map(item => `
-    <div class="order-item-row">
-      <div class="order-item-img">
+  if (!container) return;
+
+  container.innerHTML = orderItems.map(item => `
+    <div class="order-item-row" style="display: flex; gap: 12px; margin-bottom: 16px; align-items: center; border-bottom: 1px solid rgba(0,0,0,0.04); padding-bottom: 12px;">
+      <div class="order-item-img" style="width: 50px; height: 50px; border-radius: 6px; overflow: hidden; background: var(--cream); flex-shrink: 0;">
         ${item.image
-          ? `<img src="${item.image}" alt="${item.name}" loading="lazy"/>`
-          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.5rem;background:var(--cream)">🛍️</div>`}
+          ? `<img src="${item.image}" alt="${item.name}" style="width: 100%; height: 100%; object-fit: cover;"/>`
+          : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🛍️</div>`}
       </div>
-      <div style="flex:1">
-        <div class="order-item-name">${item.name}</div>
-        <div class="order-item-qty">Qty: ${item.quantity}</div>
+      <div style="flex: 1;">
+        <div class="order-item-name" style="font-weight: 600; font-size: 0.9rem;">${item.name}</div>
+        <div class="order-item-qty" style="color: var(--mid); font-size: 0.8rem;">Qty: ${item.quantity}</div>
       </div>
-      <div class="order-item-price">${formatRupees(item.price * item.quantity)}</div>
+      <div class="order-item-price" style="font-weight: 600; font-size: 0.9rem; text-align: right;">${formatRupees(item.price * item.quantity)}</div>
     </div>`).join('');
 
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const shipping = calculateShipping(items, city);
-  const total    = subtotal + shipping;
+  const subtotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const city = currentUser?.address?.city || '';
+  const shipping = calculateShipping(orderItems, city);
+  const total = subtotal + shipping;
 
   document.getElementById('coSubtotal').textContent = formatRupees(subtotal);
+  
   const weightEl = document.getElementById('coWeight');
   if (weightEl) {
-    let totalWeight = items.reduce((w, i) => w + (parseFloat(i.weight) || 0) * i.quantity, 0);
+    let totalWeight = orderItems.reduce((w, i) => w + (parseFloat(i.weight) || 0) * i.quantity, 0);
     weightEl.textContent = (totalWeight || 0).toFixed(3) + ' kg';
   }
+  
   const shipEl = document.getElementById('coShipping');
   const shipLine = document.getElementById('coShippingLine');
   if (shipping === 0) { 
@@ -118,55 +138,34 @@ function renderOrderSummary(items) {
   document.getElementById('coTotal').textContent = formatRupees(total);
 }
 
-// Intentionally removed prefillUserData to prevent Admin credentials from autofilling as guest customer
+function initPlaceOrder() {
+  const btn = document.getElementById('placeOrderBtn');
+  if (!btn) return;
 
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    const btnText = document.getElementById('placeOrderText');
+    if (btnText) btnText.textContent = 'Placing Order...';
 
+    const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
+    const notes = document.getElementById('orderNotes')?.value.trim() || '';
+    const subtotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
+    const city = currentUser.address?.city || '';
+    const shipping = calculateShipping(orderItems, city);
+    const total = subtotal + shipping;
 
-function getShippingAddress() {
-  return {
-    name:    document.getElementById('shName').value.trim(),
-    phone:   document.getElementById('shPhone').value.trim(),
-    email:   document.getElementById('shEmail').value.trim(),
-    street:  document.getElementById('shStreet').value.trim(),
-    city:    document.getElementById('shCity').value.trim(),
-    state:   document.getElementById('shState').value.trim(),
-    pincode: document.getElementById('shPincode').value.trim()
-  };
-}
-
-function validateForm() {
-  const addr = getShippingAddress();
-  const required = ['name', 'phone', 'street', 'city', 'state', 'pincode'];
-  for (const field of required) {
-    if (!addr[field]) {
-      showToast(`Please fill in ${field}`, 'error');
-      document.getElementById(`sh${field.charAt(0).toUpperCase() + field.slice(1)}`)?.focus();
-      return false;
-    }
-  }
-  if (!/^\d{6}$/.test(addr.pincode)) {
-    showToast('Enter a valid 6-digit PIN code', 'error'); return false;
-  }
-  if (!/^\+91\d{10}$/.test(addr.phone)) {
-    showToast('Enter a valid 10-digit phone number (+91XXXXXXXXXX)', 'error'); return false;
-  }
-  return true;
-}
-
-function initPlaceOrder(items) {
-  document.getElementById('placeOrderBtn').addEventListener('click', async () => {
-    if (!validateForm()) return;
-
-    const shippingAddress = getShippingAddress();
-    const notes           = document.getElementById('orderNotes')?.value.trim();
-    const isStorePickup   = document.getElementById('storePickupToggle')?.checked || false;
-
-    const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-    const shipping = calculateShipping(items, shippingAddress.city);
-    const total    = subtotal + shipping;
+    const shippingAddress = {
+      name: currentUser.name,
+      phone: currentUser.contactNumber || currentUser.phone || '—',
+      email: currentUser.email,
+      street: isStorePickup ? 'Store Pickup' : (currentUser.address?.street || '—'),
+      city: isStorePickup ? 'Indore' : (currentUser.address?.city || '—'),
+      state: isStorePickup ? 'Madhya Pradesh' : (currentUser.address?.state || '—'),
+      pincode: isStorePickup ? '452002' : (currentUser.address?.pincode || '—')
+    };
 
     const orderPayload = {
-      items: items.map(i => ({ 
+      items: orderItems.map(i => ({ 
         productId: i.productId, 
         quantity: i.quantity,
         variationId: i.variationId,
@@ -174,34 +173,31 @@ function initPlaceOrder(items) {
         size: i.size,
         price: i.price
       })),
-      shippingAddress, notes,
-      subtotal, shippingCost: shipping, total,
+      shippingAddress,
+      notes,
+      subtotal,
+      shippingCost: shipping,
+      total,
       paymentMethod: 'upi',
       isStorePickup
     };
 
-    const btn = document.getElementById('placeOrderBtn');
-    const btnText = document.getElementById('placeOrderText');
-
-    await handleUPIPayment(orderPayload, btn, btnText);
+    try {
+      const res = await API.placeOrder(orderPayload);
+      if (res && res.success && res.order) {
+        showToast('Order confirmed!', 'success');
+        Cart.clear();
+        sessionStorage.removeItem('storePickup');
+        setTimeout(() => {
+          window.location.href = `/bill?id=${res.order._id}`;
+        }, 1000);
+      } else {
+        throw new Error(res.message || 'Order failed');
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to place order. Please try again.', 'error');
+      btn.disabled = false;
+      if (btnText) btnText.textContent = 'Confirm & Place Order';
+    }
   });
-}
-
-
-
-async function handleUPIPayment(orderPayload, btn, btnText) {
-  btn.disabled = true;
-  btnText.textContent = 'Proceeding to Payment…';
-
-  try {
-    // Save pending payload to sessionStorage instead of submitting now
-    sessionStorage.setItem('pendingUpiOrder', JSON.stringify(orderPayload));
-    
-    // Redirect to the payment page to collect screenshot and place order
-    window.location.href = `/payment`;
-  } catch (err) {
-    showToast(err.message || 'Failed to proceed to payment', 'error');
-    btn.disabled = false;
-    btnText.textContent = 'Place Order';
-  }
 }

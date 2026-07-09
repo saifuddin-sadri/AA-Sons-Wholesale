@@ -18,7 +18,7 @@ const signAdminToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expire
 // ─── PUBLIC: Submit Registration Request ──────────────
 router.post('/register-request', async (req, res) => {
   try {
-    const { name, email, password, businessName, contactNumber, businessCard } = req.body;
+    const { name, email, password, businessName, contactNumber, businessCard, address } = req.body;
 
     if (!name || !email || !password || !businessName || !contactNumber) {
       return res.status(400).json({ success: false, message: 'All fields are required' });
@@ -44,7 +44,8 @@ router.post('/register-request', async (req, res) => {
 
     const request = await RegistrationRequest.create({
       name, email, password: hashedPassword, businessName, contactNumber,
-      businessCard: businessCard || ''
+      businessCard: businessCard || '',
+      address: address || {}
     });
 
     // Create admin notification
@@ -272,9 +273,11 @@ router.patch('/admin/registration-requests/:id/approve', protect, adminOnly, asy
       name: request.name,
       email: request.email,
       password: request.password,
+      phone: request.contactNumber,
       businessName: request.businessName,
       contactNumber: request.contactNumber,
       businessCard: request.businessCard,
+      address: request.address || {},
       isApproved: true,
       role: 'user'
     });

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Bill — A.A & Sons</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Poppins:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=1.0.3">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js?v=1.0.3"></script>
+  <style>
+    body {
+      background: #f4f5f6;
+      padding: 40px 20px;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+      color: #333;
+    }
+
+    .bill-card-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto 100px;
+      background: white;
+      padding: 50px;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(200, 135, 58, 0.15);
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Print styling optimizations */
+    .bill-header-title {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid var(--teal, #1B5E4B);
+      padding-bottom: 20px;
+    }
+
+    .bill-header-title h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.5rem;
+      margin: 0;
+      color: var(--teal, #1B5E4B);
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .bill-header-title p {
+      font-size: 0.9rem;
+      color: var(--mid, #6b7280);
+      margin: 4px 0 0;
+    }
+
+    .bill-meta-info {
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+      margin-bottom: 35px;
+    }
+
+    .meta-column {
+      flex: 1;
+    }
+
+    .meta-column h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem;
+      color: var(--teal, #1B5E4B);
+      border-bottom: 1px solid #eaeaea;
+      padding-bottom: 6px;
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+
+    .meta-column p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .invoice-items-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0 35px;
+    }
+
+    .invoice-items-table th {
+      background: #f8faf9;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 2px solid #e1e7e4;
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--teal, #1B5E4B);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .invoice-items-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid #eaeaea;
+      font-size: 0.9rem;
+    }
+
+    .bill-totals-section {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      margin-top: 25px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      width: 280px;
+      font-size: 0.95rem;
+      color: var(--mid, #6b7280);
+    }
+
+    .totals-row.grand-total {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--teal, #1B5E4B);
+      border-top: 2px solid var(--teal, #1B5E4B);
+      padding-top: 10px;
+      margin-top: 6px;
+    }
+
+    /* Fixed Actions bar at the bottom */
+    .bill-actions-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      z-index: 1000;
+      box-shadow: 0 -5px 25px rgba(0,0,0,0.06);
+      border-top: 1px solid rgba(0,0,0,0.05);
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.92rem;
+      transition: all 0.25s;
+      font-family: 'Poppins', sans-serif;
+      text-decoration: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.05);
+    }
+
+    .btn-pdf {
+      background: var(--teal, #1B5E4B);
+      color: white;
+    }
+
+    .btn-whatsapp-share {
+      background: #25d366;
+      color: white;
+    }
+
+    .btn-print-bill {
+      background: #4b5563;
+      color: white;
+    }
+
+    .btn-home {
+      background: #f3f4f6;
+      color: #374151;
+    }
+
+    /* Loading overlay */
+    #billLoadingOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+
+    .loading-spinner {
+      width: 45px;
+      height: 45px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid var(--teal, #1B5E4B);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @media print {
+      .bill-actions-bar {
+        display: none !important;
+      }
+      body {
+        background: white;
+        padding: 0;
+      }
+      .bill-card-container {
+        box-shadow: none;
+        max-width: 100%;
+        width: 100%;
+        border: none;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Loading State -->
+  <div id="billLoadingOverlay">
+    <div class="loading-spinner"></div>
+    <p style="margin-top: 18px; font-weight: 500; font-size: 0.95rem; color: #555;">Generating your professional invoice...</p>
+  </div>
+
+  <div class="bill-card-container" id="bill-card-content">
+    <div class="bill-header-title">
+      <h1>A.A & Sons</h1>
+      <p>Marriage Goods & Wholesale Merchant</p>
+      <p style="font-size: 0.78rem;">Shop no: 06, Marothiya Bazar, near Bajaj Khana Chowk, Indore (M.P.)</p>
+      <p style="font-size: 0.78rem; font-weight: 600; color: var(--teal, #1B5E4B); margin-top: 5px;">Invoice / Wholesale Bill</p>
+    </div>
+
+    <div class="bill-meta-info">
+      <div class="meta-column">
+        <h3>Order Details</h3>
+        <p><strong>Order Number:</strong> <span id="val-orderNum">...</span></p>
+        <p><strong>Date:</strong> <span id="val-date">...</span></p>
+        <p><strong>Status:</strong> <span id="val-status" style="font-weight:600; color: var(--teal, #1B5E4B);">Placed</span></p>
+      </div>
+      <div class="meta-column">
+        <h3>Billed To</h3>
+        <p><strong>Name:</strong> <span id="val-custName">...</span></p>
+        <p><strong>Business:</strong> <span id="val-businessName">...</span></p>
+        <p><strong>Phone:</strong> <span id="val-custPhone">...</span></p>
+      </div>
+      <div class="meta-column">
+        <h3>Delivery Location</h3>
+        <p id="val-shippingAddress">...</p>
+      </div>
+    </div>
+
+    <table class="invoice-items-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th style="width: 100px; text-align: center;">Qty</th>
+          <th style="width: 130px; text-align: right;">Unit Price</th>
+          <th style="width: 130px; text-align: right;">Total Price</th>
+        </tr>
+      </thead>
+      <tbody id="val-itemsList">
+        <!-- Rendered by JS -->
+      </tbody>
+    </table>
+
+    <div class="bill-totals-section">
+      <div class="totals-row">
+        <span>Subtotal:</span>
+        <span id="val-subtotal">...</span>
+      </div>
+      <div class="totals-row">
+        <span>Shipping:</span>
+        <span id="val-shipping">...</span>
+      </div>
+      <div class="totals-row grand-total">
+        <span>Grand Total:</span>
+        <span id="val-total">...</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 50px; border-top: 1px dashed #ddd; padding: 25px 0; font-style: italic; color: #888; text-align: center; font-size: 0.85rem;">
+      Thank you for your business! For any enquiries regarding delivery or payment, please contact +91 88274 78757.
+    </div>
+  </div>
+
+  <div class="bill-actions-bar">
+    <a href="/" class="action-btn btn-home">
+      🏠 Back to Home
+    </a>
+    <button class="action-btn btn-print-bill" id="printBtn" onclick="window.print()">
+      🖨️ Print Invoice
+    </button>
+    <button class="action-btn btn-pdf" id="downloadPdfBtn">
+      📥 Download PDF
+    </button>
+    <button class="action-btn btn-whatsapp-share" id="shareWhatsappBtn">
+      💬 Share to WhatsApp
+    </button>
+  </div>
+
+  <script src="/js/api.js?v=1.0.3"></script>
+  <script src="/js/bill.js?v=1.0.3"></script>
+</body>
+
+</html>

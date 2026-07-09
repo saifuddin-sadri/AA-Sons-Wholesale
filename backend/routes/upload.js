@@ -20,6 +20,19 @@ router.post('/image', protect, adminOnly, (req, res, next) => {
   }
 });
 
+// Upload business card (Public — used during registration)
+router.post('/business-card', upload.single('image'), (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ success: false, message: 'No image uploaded' });
+    res.json({
+      success: true,
+      image: { url: req.file.url, public_id: req.file.public_id }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Upload payment proof (Public)
 router.post('/payment-proof', upload.single('image'), (req, res) => {
   try {

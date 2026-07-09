@@ -145,14 +145,14 @@ router.post('/', async (req, res) => {
       statusHistory: []
     };
 
-    // All orders are now essentially UPI-based and start as payment_pending
+    // Set order status based on payment proof
     if (paymentScreenshot) {
       orderData.paymentScreenshot = paymentScreenshot;
       orderData.status = 'payment_pending';
       orderData.statusHistory.push({ status: 'payment_pending', note: 'Customer submitted payment screenshot with order' });
     } else {
-      orderData.status = 'payment_pending';
-      orderData.statusHistory.push({ status: 'payment_pending', note: 'Awaiting UPI payment' });
+      orderData.status = 'placed';
+      orderData.statusHistory.push({ status: 'placed', note: 'Order placed directly' });
     }
 
     if (paymentId) { orderData.paymentId = paymentId; orderData.paymentStatus = 'paid'; }
@@ -217,6 +217,25 @@ router.get('/my', protect, async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id }).sort('-createdAt').populate('items.product', 'name images');
     res.json({ success: true, orders });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Get single order details (authenticated user / owner or admin)
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id)
+      .populate('items.product', 'name images')
+      .populate('user', 'name email phone businessName contactNumber');
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    // Allow if owner or admin
+    if (order.user && order.user._id.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    res.json({ success: true, order });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
