@@ -101,6 +101,36 @@ router.post('/login-request', async (req, res) => {
       return res.status(401).json({ success: false, message: 'You entered the wrong password' });
     }
 
+    // Check if user has an approved login request
+    const approvedLogin = await LoginRequest.findOne({
+      user: user._id,
+      status: 'approved'
+    }).sort({ approvedAt: -1 });
+
+    if (approvedLogin) {
+      // Set session expiry to 3 hours from now
+      const sessionExpiry = new Date(Date.now() + 3 * 60 * 60 * 1000);
+      user.sessionExpiry = sessionExpiry;
+      await user.save();
+
+      // Mark the login request as used
+      approvedLogin.status = 'used';
+      await approvedLogin.save();
+
+      const token = signSessionToken(user._id);
+
+      return res.json({
+        success: true,
+        directLogin: true,
+        token,
+        sessionExpiry: sessionExpiry.toISOString(),
+        user: {
+          id: user._id, name: user.name, email: user.email,
+          role: user.role, businessName: user.businessName
+        }
+      });
+    }
+
     // Check if there's already a pending login request
     const existingRequest = await LoginRequest.findOne({ user: user._id, status: 'pending' });
     if (existingRequest) {

@@ -179,6 +179,15 @@
             window.location.href = '/admin';
             return;
           }
+          // Direct login if the request was already approved
+          if (data.directLogin) {
+            saveAuth(data.token, data.user);
+            if (data.sessionExpiry) {
+              localStorage.setItem('aa_session_expiry', data.sessionExpiry);
+            }
+            window.location.href = '/';
+            return;
+          }
           loginPanel.classList.remove('active');
           loginSuccess.classList.add('visible');
         }
