@@ -1041,6 +1041,12 @@
                 </div>
                 <div class="form-group full">
                   <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+                    <input type="checkbox" id="pBestSeller" style="width:16px;height:16px;accent-color:var(--teal)" />
+                    <span class="form-label" style="margin:0">Mark as Best Seller</span>
+                  </label>
+                </div>
+                <div class="form-group full">
+                  <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
                     <input type="checkbox" id="pActive" checked
                       style="width:16px;height:16px;accent-color:var(--teal)" />
                     <span class="form-label" style="margin:0">Active (visible on store)</span>
@@ -1331,6 +1337,16 @@
             <input type="file" id="catImageInput" accept="image/*" style="display:none"
               onchange="handleCatImageUpload(event)" />
             <div class="img-preview-grid" id="catImgPreview"></div>
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Category Posters (Carousel)</label>
+            <div class="upload-zone" id="catPostersUploadZone" onclick="document.getElementById('catPostersInput').click()">
+              <div class="upload-icon">🖼️</div>
+              <p>Click to upload category posters (Multiple allowed)</p>
+            </div>
+            <input type="file" id="catPostersInput" accept="image/*" multiple style="display:none"
+              onchange="handleCatPostersUpload(event)" />
+            <div class="img-preview-grid" id="catPostersPreview"></div>
           </div>
           <div class="form-group full">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">

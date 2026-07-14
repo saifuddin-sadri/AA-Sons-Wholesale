@@ -465,7 +465,7 @@ async function loadAdminCategories() {
           </td>
           <td>
             <div style="display:flex;gap:6px">
-              <button class="btn-icon edit" onclick="editCategory('${p._id}', '${p.name.replace(/'/g,"\\'")}', '${(p.description||"").replace(/'/g,"\\'")}', ${p.active}, '', '${p.displayType || 'card'}', '${p.image ? encodeURIComponent(JSON.stringify(p.image)) : ''}')" title="Edit">✏️</button>
+              <button class="btn-icon edit" onclick="editCategory('${p._id}', '${p.name.replace(/'/g,"\\'")}', '${(p.description||"").replace(/'/g,"\\'")}', ${p.active}, '', '${p.displayType || 'card'}', '${p.image ? encodeURIComponent(JSON.stringify(p.image)) : ''}', '${p.posters ? encodeURIComponent(JSON.stringify(p.posters)) : ''}')" title="Edit">✏️</button>
               <button class="btn-icon delete" onclick="deleteCategory('${p._id}')" title="Delete">🗑️</button>
             </div>
           </td>
@@ -486,7 +486,7 @@ async function loadAdminCategories() {
             <td>—</td>
             <td>
               <div style="display:flex;gap:6px">
-                <button class="btn-icon edit" onclick="editCategory('${s._id}', '${s.name.replace(/'/g,"\\'")}', '${(s.description||"").replace(/'/g,"\\'")}', ${s.active}, '${p._id}', '${s.displayType || 'card'}', '${s.image ? encodeURIComponent(JSON.stringify(s.image)) : ''}')" title="Edit">✏️</button>
+                <button class="btn-icon edit" onclick="editCategory('${s._id}', '${s.name.replace(/'/g,"\\'")}', '${(s.description||"").replace(/'/g,"\\'")}', ${s.active}, '${p._id}', '${s.displayType || 'card'}', '${s.image ? encodeURIComponent(JSON.stringify(s.image)) : ''}', '${s.posters ? encodeURIComponent(JSON.stringify(s.posters)) : ''}')" title="Edit">✏️</button>
                 <button class="btn-icon delete" onclick="deleteCategory('${s._id}')" title="Delete">🗑️</button>
               </div>
             </td>
@@ -513,6 +513,7 @@ window.addSubCategory = async function(parentId) {
 };
 
 let currentCategoryImg = null;
+let currentCategoryPosters = [];
 
 async function handleCatImageUpload(e) {
   const files = Array.from(e.target.files);
@@ -546,6 +547,55 @@ function removeCatImage(e) {
   }
   currentCategoryImg = null;
   document.getElementById('catImgPreview').innerHTML = '';
+}
+
+async function handleCatPostersUpload(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  const zone = document.getElementById('catPostersUploadZone');
+  const originalHtml = zone.innerHTML;
+  zone.innerHTML = `<div class="upload-icon">⏳</div><p>Uploading poster(s)…</p>`;
+
+  try {
+    if (files.length === 1) {
+      const data = await API.uploadImage(files[0]);
+      currentCategoryPosters.push(data.image);
+    } else {
+      const data = await API.uploadImages(files);
+      if (data.images && data.images.length) {
+        currentCategoryPosters.push(...data.images);
+      }
+    }
+    renderCatPostersPreview();
+    showToast('Poster(s) uploaded successfully!', 'success');
+  } catch (err) {
+    showToast(err.message || 'Upload failed', 'error');
+  }
+
+  zone.innerHTML = originalHtml;
+  e.target.value = '';
+}
+
+function renderCatPostersPreview() {
+  const container = document.getElementById('catPostersPreview');
+  if (!container) return;
+  
+  container.innerHTML = currentCategoryPosters.map((img, index) => `
+    <div class="img-preview-item" data-index="${index}">
+      <img src="${img.url}" alt="Category poster ${index + 1}"/>
+      <button class="img-preview-remove" onclick="removeCatPoster(event, ${index})">✕</button>
+    </div>
+  `).join('');
+}
+
+function removeCatPoster(e, index) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  currentCategoryPosters.splice(index, 1);
+  renderCatPostersPreview();
 }
 
 function openCategoryModal() {
@@ -586,7 +636,7 @@ async function populateParentCategories(selectedParent = null) {
   }
 }
 
-function editCategory(id, name, desc, active, parent, displayType, imageStr) {
+function editCategory(id, name, desc, active, parent, displayType, imageStr, postersStr) {
   document.getElementById('categoryModalTitle').textContent = 'Edit Category';
   document.getElementById('editCategoryId').value = id;
   document.getElementById('catName').value = name;
@@ -612,6 +662,19 @@ function editCategory(id, name, desc, active, parent, displayType, imageStr) {
     document.getElementById('catImgPreview').innerHTML = '';
   }
 
+  if (postersStr) {
+    try {
+      currentCategoryPosters = JSON.parse(decodeURIComponent(postersStr));
+      renderCatPostersPreview();
+    } catch (e) {
+      currentCategoryPosters = [];
+      document.getElementById('catPostersPreview').innerHTML = '';
+    }
+  } else {
+    currentCategoryPosters = [];
+    document.getElementById('catPostersPreview').innerHTML = '';
+  }
+
   populateParentCategories(parent);
   
   document.getElementById('categoryModal').classList.add('open');
@@ -625,7 +688,8 @@ async function saveCategory() {
     parent: document.getElementById('catParent').value || null,
     displayType: document.getElementById('catDisplayType').value || 'card',
     active: document.getElementById('catActive').checked,
-    image: currentCategoryImg
+    image: currentCategoryImg,
+    posters: currentCategoryPosters
   };
   if (!payload.name) return showToast('Name is required', 'error');
 
@@ -722,6 +786,7 @@ async function initProductForm(product = null) {
 
   // Reset checkboxes
   document.getElementById('pFeatured').checked = false;
+  document.getElementById('pBestSeller').checked = false;
   document.getElementById('pActive').checked   = true;
 
   // Reset UI elements
@@ -775,6 +840,7 @@ function fillProductForm(p) {
   document.getElementById('pTags').value        = (p.tags || []).join(', ');
   document.getElementById('pColors').value      = (p.colors || []).join(', ');
   document.getElementById('pFeatured').checked   = p.featured || false;
+  document.getElementById('pBestSeller').checked = p.bestSeller || false;
   document.getElementById('pActive').checked     = p.active !== false;
   document.getElementById('pUnit').value         = p.unit || 'pcs';
   document.getElementById('productFormTitle').textContent = 'Edit Product';
@@ -992,6 +1058,7 @@ async function saveProduct() {
     tags:        tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
     colors:      colorsRaw ? colorsRaw.split(',').map(c => c.trim()).filter(Boolean) : [],
     featured:    document.getElementById('pFeatured').checked,
+    bestSeller:  document.getElementById('pBestSeller').checked,
     active:      document.getElementById('pActive').checked,
     unit:        document.getElementById('pUnit').value,
     images:      uploadedImages,

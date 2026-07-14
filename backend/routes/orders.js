@@ -134,8 +134,8 @@ router.post('/', async (req, res) => {
     const isBranch = BRANCH_CITIES.some(c => c.toLowerCase() === shippingAddress.city?.trim().toLowerCase());
     const rate = isBranch ? 75 : 100;
     
-    // Use Store Pickup if selected
-    const shippingCost = isStorePickup ? 0 : (Math.ceil(totalWeight) * rate);
+    // Use Store Pickup if selected (always 0 shipping cost now)
+    const shippingCost = 0;
     
     const total = subtotal + shippingCost;
 

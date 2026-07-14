@@ -174,11 +174,7 @@ function renderSummary(items) {
   const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
   const shippingEl = document.getElementById('summaryShipping');
   if (shippingEl) {
-    if (isStorePickup) {
-      shippingEl.textContent = 'FREE (Store Pickup)';
-    } else {
-      shippingEl.textContent = 'Calculated at checkout';
-    }
+    shippingEl.textContent = 'FREE';
   }
 
   document.getElementById('summarySubtotal').textContent = formatRupees(subtotal);

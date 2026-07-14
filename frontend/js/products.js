@@ -14,6 +14,8 @@ let allProducts = [];
 let allCategories = [];
 let currentCategoryData = null;
 let paginatedPages = [];
+let carouselInterval = null;
+let currentSlideIndex = 0;
 
 function getFilters() {
   const selectedCats = Array.from(document.querySelectorAll('input[name="category"]:checked'))
@@ -25,6 +27,7 @@ function getFilters() {
   const minPrice   = document.getElementById('minPrice')?.value;
   const maxPrice   = document.getElementById('maxPrice')?.value;
   const featured   = document.getElementById('featuredOnly')?.checked;
+  const bestSeller = document.getElementById('bestSellerOnly')?.checked;
 
   const params = { limit: 99999, sort: sort || '-createdAt' };
   if (selectedCats.length > 0) params.category = selectedCats.join(',');
@@ -32,6 +35,7 @@ function getFilters() {
   if (minPrice) params.minPrice = minPrice;
   if (maxPrice) params.maxPrice = maxPrice;
   if (featured) params.featured = true;
+  if (bestSeller) params.bestSeller = true;
   return params;
 }
 
@@ -152,6 +156,16 @@ function updateCategoryHeaderDisplay() {
 
   if (checkedCats.length === 0) {
     headerDiv.style.display = 'none';
+    const container = document.getElementById('categoryCarouselContainer');
+    if (container) container.style.display = 'none';
+    const heroContent = document.getElementById('heroContent');
+    if (heroContent) heroContent.style.display = '';
+    const heroSection = document.getElementById('pageHeroSection');
+    if (heroSection) heroSection.classList.remove('has-carousel');
+    if (typeof carouselInterval !== 'undefined' && carouselInterval) {
+      clearInterval(carouselInterval);
+      carouselInterval = null;
+    }
     return;
   }
 
@@ -161,6 +175,16 @@ function updateCategoryHeaderDisplay() {
 
   if (selectedObjs.length === 0) {
     headerDiv.style.display = 'none';
+    const container = document.getElementById('categoryCarouselContainer');
+    if (container) container.style.display = 'none';
+    const heroContent = document.getElementById('heroContent');
+    if (heroContent) heroContent.style.display = '';
+    const heroSection = document.getElementById('pageHeroSection');
+    if (heroSection) heroSection.classList.remove('has-carousel');
+    if (typeof carouselInterval !== 'undefined' && carouselInterval) {
+      clearInterval(carouselInterval);
+      carouselInterval = null;
+    }
     return;
   }
 
@@ -202,6 +226,16 @@ function updateCategoryHeaderDisplay() {
 
   if (!mainTitle) {
     headerDiv.style.display = 'none';
+    const container = document.getElementById('categoryCarouselContainer');
+    if (container) container.style.display = 'none';
+    const heroContent = document.getElementById('heroContent');
+    if (heroContent) heroContent.style.display = '';
+    const heroSection = document.getElementById('pageHeroSection');
+    if (heroSection) heroSection.classList.remove('has-carousel');
+    if (typeof carouselInterval !== 'undefined' && carouselInterval) {
+      clearInterval(carouselInterval);
+      carouselInterval = null;
+    }
     return;
   }
 
@@ -216,6 +250,18 @@ function updateCategoryHeaderDisplay() {
   }
 
   headerDiv.style.display = 'block';
+
+  // Populate currentCategoryData for the carousel (use primary parent for its posters)
+  if (parentObjs.length > 0) {
+    currentCategoryData = parentObjs[0];
+  } else if (subObjs.length > 0) {
+    const parentId = subObjs[0].parent?._id || subObjs[0].parent;
+    currentCategoryData = allCategories.find(c => c._id === parentId) || subObjs[0];
+  } else {
+    currentCategoryData = null;
+  }
+
+  renderCategoryCarousel();
 }
 
 function buildCategoryCard(cat) {
@@ -280,6 +326,8 @@ function renderCurrentPage() {
       parents.forEach(p => grid.appendChild(buildCategoryCard(p)));
       
       document.getElementById('paginationWrap').style.display = 'none';
+      const bsSection1 = document.getElementById('bestSellersSection');
+      if (bsSection1) bsSection1.style.display = 'none';
       updateCategoryHeaderDisplay();
       return;
     }
@@ -314,6 +362,8 @@ function renderCurrentPage() {
         subs.forEach(s => grid.appendChild(buildCategoryCard(s)));
         
         document.getElementById('paginationWrap').style.display = 'none';
+        const bsSection2 = document.getElementById('bestSellersSection');
+        if (bsSection2) bsSection2.style.display = 'none';
         updateCategoryHeaderDisplay();
         return;
       }
@@ -333,6 +383,7 @@ function renderCurrentPage() {
     if (actions) actions.style.display = 'flex';
   }
   updateCategoryHeaderDisplay();
+  loadBestSellers();
 
   const countEl = document.getElementById('resultsCount');
   if (countEl) {
@@ -845,6 +896,7 @@ function initFilters() {
 
   document.getElementById('sortSelect')?.addEventListener('change', () => loadProducts());
   document.getElementById('featuredOnly')?.addEventListener('change', () => loadProducts());
+  document.getElementById('bestSellerOnly')?.addEventListener('change', () => loadProducts());
   document.getElementById('applyPrice')?.addEventListener('click', () => loadProducts());
   document.getElementById('clearFilters')?.addEventListener('click', resetFilters);
 }
@@ -857,6 +909,8 @@ function resetFilters() {
   document.getElementById('minPrice').value = '';
   document.getElementById('maxPrice').value = '';
   document.getElementById('featuredOnly').checked = false;
+  const bsOnly = document.getElementById('bestSellerOnly');
+  if (bsOnly) bsOnly.checked = false;
   document.getElementById('sortSelect').value = '-createdAt';
   loadProducts();
 }
@@ -1105,4 +1159,249 @@ function buildProductCard(product) {
   setupProductActions(div, product);
 
   return div;
+}
+
+function renderCategoryCarousel() {
+  const container = document.getElementById('categoryCarouselContainer');
+  const carousel = document.getElementById('categoryCarousel');
+  const dotsContainer = document.getElementById('carouselDots');
+  const prevBtn = document.getElementById('carouselPrevBtn');
+  const nextBtn = document.getElementById('carouselNextBtn');
+
+  if (!container || !carousel) return;
+
+  // Clear existing interval
+  if (carouselInterval) {
+    clearInterval(carouselInterval);
+    carouselInterval = null;
+  }
+
+  // Check if currentCategoryData exists and has posters
+  if (!currentCategoryData || !currentCategoryData.posters || currentCategoryData.posters.length === 0) {
+    container.style.display = 'none';
+    const heroContent = document.getElementById('heroContent');
+    if (heroContent) heroContent.style.display = '';
+    const heroSection = document.getElementById('pageHeroSection');
+    if (heroSection) heroSection.classList.remove('has-carousel');
+    return;
+  }
+
+  const posters = currentCategoryData.posters;
+  currentSlideIndex = 0;
+  
+  // Render slides
+  carousel.innerHTML = posters.map((poster, index) => `
+    <div class="category-carousel-slide">
+      <img src="${poster.url}" alt="Category Poster ${index + 1}" onerror="this.src='/images/placeholder.svg'"/>
+    </div>
+  `).join('');
+
+  // Render dots
+  if (dotsContainer) {
+    if (posters.length > 1) {
+      dotsContainer.innerHTML = posters.map((_, index) => `
+        <span class="carousel-dot ${index === 0 ? 'active' : ''}" onclick="goToSlide(${index})"></span>
+      `).join('');
+      dotsContainer.style.display = 'flex';
+    } else {
+      dotsContainer.innerHTML = '';
+      dotsContainer.style.display = 'none';
+    }
+  }
+
+  // Show/hide navigation arrows
+  if (prevBtn && nextBtn) {
+    if (posters.length > 1) {
+      prevBtn.style.display = 'flex';
+      nextBtn.style.display = 'flex';
+      
+      // Set up click handlers
+      prevBtn.onclick = (e) => {
+        e.stopPropagation();
+        moveCarousel(-1);
+        startCarouselAutoPlay();
+      };
+      nextBtn.onclick = (e) => {
+        e.stopPropagation();
+        moveCarousel(1);
+        startCarouselAutoPlay();
+      };
+    } else {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+    }
+  }
+
+  // Reset transform
+  carousel.style.transform = `translateX(0%)`;
+  container.style.display = 'block';
+
+  // Hide the default hero text — carousel fills the hero banner
+  const heroContent = document.getElementById('heroContent');
+  if (heroContent) heroContent.style.display = 'none';
+  const heroSection = document.getElementById('pageHeroSection');
+  if (heroSection) heroSection.classList.add('has-carousel');
+
+  // Set up auto-play if there's more than one poster
+  if (posters.length > 1) {
+    startCarouselAutoPlay();
+  }
+}
+
+function startCarouselAutoPlay() {
+  if (carouselInterval) clearInterval(carouselInterval);
+  carouselInterval = setInterval(() => {
+    moveCarousel(1);
+  }, 5000); // Change slide every 5 seconds
+}
+
+function moveCarousel(direction) {
+  if (!currentCategoryData || !currentCategoryData.posters || currentCategoryData.posters.length <= 1) return;
+  const postersCount = currentCategoryData.posters.length;
+  currentSlideIndex = (currentSlideIndex + direction + postersCount) % postersCount;
+  updateCarouselUI();
+}
+
+function goToSlide(index) {
+  currentSlideIndex = index;
+  updateCarouselUI();
+  startCarouselAutoPlay(); // Reset timer on manual action
+}
+
+function updateCarouselUI() {
+  const carousel = document.getElementById('categoryCarousel');
+  if (!carousel) return;
+  
+  carousel.style.transform = `translateX(-${currentSlideIndex * 100}%)`;
+  
+  const dots = document.querySelectorAll('.carousel-dot');
+  dots.forEach((dot, index) => {
+    dot.classList.toggle('active', index === currentSlideIndex);
+  });
+}
+
+window.goToSlide = goToSlide;
+
+// ── Best Sellers Section ──────────────────────────────────────────────
+async function loadBestSellers() {
+  const section  = document.getElementById('bestSellersSection');
+  const grid     = document.getElementById('bestSellersGrid');
+  const prevBtn  = document.getElementById('bsPrevBtn');
+  const nextBtn  = document.getElementById('bsNextBtn');
+  if (!section || !grid) return;
+
+  // Determine active category
+  const checkedCats = Array.from(document.querySelectorAll('input[name="category"]:checked'))
+    .map(cb => cb.value)
+    .filter(v => v !== 'all');
+
+  // Hide when no category is selected
+  if (checkedCats.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  try {
+    const catParam = checkedCats.join(',');
+    const data = await API.getProducts({ category: catParam, bestSeller: true, limit: 20 });
+    const products = data.products || [];
+
+    if (products.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+
+    // Update subtitle with category name
+    const subtitle = section.querySelector('.best-sellers-subtitle');
+    if (subtitle) {
+      subtitle.textContent = `Top picks in ${checkedCats[0]}`;
+    }
+
+    // Render cards
+    grid.innerHTML = '';
+    products.forEach((p, i) => {
+      const card = buildBestSellerCard(p);
+      card.style.animationDelay = `${i * 0.06}s`;
+      card.classList.add('animate-in');
+      grid.appendChild(card);
+    });
+
+    section.style.display = 'block';
+    initBestSellersCarousel(grid, prevBtn, nextBtn);
+  } catch (err) {
+    console.error('Error loading best sellers:', err);
+    section.style.display = 'none';
+  }
+}
+
+function buildBestSellerCard(product) {
+  const div = document.createElement('div');
+  div.className = 'bs-card';
+
+  const img       = product.images?.[0]?.url || '';
+  const discount  = product.mrp && product.mrp > product.price
+    ? Math.round((1 - product.price / product.mrp) * 100) : 0;
+  const detailUrl = `/product?id=${product._id}`;
+
+  div.innerHTML = `
+    <div class="bs-card-img" onclick="window.location.href='${detailUrl}'">
+      ${img
+        ? `<img src="${img}" alt="${product.name}" loading="lazy" onerror="this.src='/images/placeholder.svg'"/>`
+        : `<div class="bs-card-placeholder">🛍️</div>`}
+      ${discount > 0 ? `<span class="bs-badge">${discount}% OFF</span>` : ''}
+      <span class="bs-best-tag">★ Best Seller</span>
+    </div>
+    <div class="bs-card-info">
+      <a href="${detailUrl}" class="bs-card-name">${product.name}</a>
+      <div class="bs-card-price-row">
+        <span class="bs-card-price">${formatRupees(product.price * (product.minQuantity || 1))}</span>
+        ${product.mrp > product.price ? `<span class="bs-card-mrp">${formatRupees(product.mrp * (product.minQuantity || 1))}</span>` : ''}
+      </div>
+      <button class="bs-card-add" data-id="${product._id}">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        Add
+      </button>
+    </div>
+  `;
+
+  // Image click
+  div.querySelector('.bs-card-img').style.cursor = 'pointer';
+
+  // Add to cart
+  div.querySelector('.bs-card-add')?.addEventListener('click', () => {
+    Cart.add(product, product.minQuantity || 1);
+    showToast(`Added ${product.name} to cart`, 'success');
+    const btn = div.querySelector('.bs-card-add');
+    const original = btn.innerHTML;
+    btn.innerHTML = '✓ Added';
+    btn.style.background = 'var(--teal)';
+    btn.style.color = 'white';
+    setTimeout(() => { btn.innerHTML = original; btn.style.background = ''; btn.style.color = ''; }, 1500);
+  });
+
+  return div;
+}
+
+function initBestSellersCarousel(grid, prevBtn, nextBtn) {
+  if (!grid || !prevBtn || !nextBtn) return;
+
+  const scrollSide = (direction) => {
+    const cardWidth = grid.querySelector('.bs-card')?.offsetWidth || 220;
+    const scrollAmount = cardWidth * 2 + 24; // 2 cards + gap
+    grid.scrollBy({ left: direction === 'next' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+  };
+
+  prevBtn.onclick = () => scrollSide('prev');
+  nextBtn.onclick = () => scrollSide('next');
+
+  const toggleButtons = () => {
+    prevBtn.style.opacity = grid.scrollLeft <= 5 ? '0.3' : '1';
+    prevBtn.style.pointerEvents = grid.scrollLeft <= 5 ? 'none' : 'auto';
+    nextBtn.style.opacity = grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 5 ? '0.3' : '1';
+    nextBtn.style.pointerEvents = grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 5 ? 'none' : 'auto';
+  };
+
+  grid.addEventListener('scroll', toggleButtons);
+  window.addEventListener('resize', toggleButtons);
+  setTimeout(toggleButtons, 300);
 }

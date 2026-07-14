@@ -10,7 +10,7 @@ cloudinary.v2.config({
 });
 
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary.v2,
+  cloudinary: cloudinary,
   folder: 'aa-sons-products',
   allowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
   transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto' }]

@@ -27,6 +27,10 @@ const categorySchema = new mongoose.Schema({
     url: String,
     public_id: String
   },
+  posters: [{
+    url: String,
+    public_id: String
+  }],
   displayType: {
     type: String,
     enum: ['card', 'tabular'],

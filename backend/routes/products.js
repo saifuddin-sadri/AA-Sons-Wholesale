@@ -24,7 +24,7 @@ async function getRecentSalesMap() {
 // GET all products (with filters, search, pagination)
 router.get('/', async (req, res) => {
   try {
-    const { search, category, minPrice, maxPrice, featured, page = 1, limit = 20, sort = '-createdAt' } = req.query;
+    const { search, category, minPrice, maxPrice, featured, bestSeller, page = 1, limit = 20, sort = '-createdAt' } = req.query;
     const query = { active: true };
 
     if (search) query.$text = { $search: search };
@@ -45,6 +45,7 @@ router.get('/', async (req, res) => {
       query.category = { $in: allTargetCategoryNames };
     }
     if (featured === 'true') query.featured = true;
+    if (bestSeller === 'true') query.bestSeller = true;
     if (minPrice || maxPrice) {
       query.price = {};
       if (minPrice) query.price.$gte = Number(minPrice);

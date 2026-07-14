@@ -15,6 +15,7 @@ const productSchema = new mongoose.Schema({
   hsn:         { type: String, trim: true },
   unit:        { type: String, enum: ['kg', 'm', 'pcs', 'packet'], default: 'pcs' },
   featured:    { type: Boolean, default: false },
+  bestSeller:  { type: Boolean, default: false },
   active:      { type: Boolean, default: true },
   tags:        [String],
   colors:      [String],
@@ -46,6 +47,6 @@ const productSchema = new mongoose.Schema({
 
 productSchema.index({ name: 'text', description: 'text', tags: 'text' });
 productSchema.index({ category: 1 });
-productSchema.index({ active: 1, featured: -1 });
+productSchema.index({ active: 1, featured: -1, bestSeller: -1 });
 
 module.exports = mongoose.model('Product', productSchema);

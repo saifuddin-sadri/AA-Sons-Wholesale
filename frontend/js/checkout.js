@@ -34,14 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function calculateShipping(items, city = '') {
-  const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
-  if (isStorePickup) return 0;
-
-  let totalWeight = items.reduce((w, i) => w + (parseFloat(i.weight) || 0) * i.quantity, 0);
-  if (totalWeight === 0 && items.length > 0) totalWeight = 1;
-  const isBranch = BRANCH_CITIES.some(c => c.toLowerCase() === city.trim().toLowerCase());
-  const rate = isBranch ? 75 : 100;
-  return Math.ceil(totalWeight) * rate;
+  return 0;
 }
 
 function renderCheckoutDetails() {
@@ -74,13 +67,13 @@ function renderCheckoutDetails() {
     const pincode = addr.pincode || '—';
 
     container.innerHTML = `
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-        <div>
+      <div class="checkout-user-grid">
+        <div style="word-break: break-word;">
           <p style="color: var(--mid); font-size: 0.78rem; text-transform: uppercase; font-weight: 600;">Recipient</p>
           <p style="font-weight: 600; font-size: 1rem;">${currentUser.name}</p>
           <p>${currentUser.businessName ? `🏢 ${currentUser.businessName}` : ''}</p>
         </div>
-        <div>
+        <div style="word-break: break-word;">
           <p style="color: var(--mid); font-size: 0.78rem; text-transform: uppercase; font-weight: 600;">Contact Details</p>
           <p>📞 ${currentUser.contactNumber || currentUser.phone || '—'}</p>
           <p>✉️ ${currentUser.email}</p>

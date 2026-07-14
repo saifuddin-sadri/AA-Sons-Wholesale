@@ -122,10 +122,18 @@
   </nav>
 
   <!-- PAGE HERO -->
-  <section class="page-hero">
-    <div class="container">
+  <section class="page-hero" id="pageHeroSection">
+    <!-- Default hero text (hidden when a category with posters is active) -->
+    <div class="container" id="heroContent">
       <h1>Shop Marriage Goods &amp; Bhagwan Poshak in Indore</h1>
       <p>4000+ premium wedding goods, devotional wear &amp; gifting items — trusted by 10,000+ families since 1950</p>
+    </div>
+    <!-- Category Poster Carousel (shown inside hero when category has posters) -->
+    <div class="category-carousel-container" id="categoryCarouselContainer" style="display:none;">
+      <div class="category-carousel" id="categoryCarousel"></div>
+      <button class="carousel-nav prev" id="carouselPrevBtn">❮</button>
+      <button class="carousel-nav next" id="carouselNextBtn">❯</button>
+      <div class="carousel-dots" id="carouselDots"></div>
     </div>
   </section>
 
@@ -168,13 +176,17 @@
               style="margin-top:10px;width:100%;justify-content:center;font-size:.75rem;padding:8px">Apply</button>
           </div>
 
-          <!-- Availability -->
+          <!-- Availability / Filters -->
           <div class="filter-group">
-            <h4>Availability</h4>
+            <h4>Filters</h4>
             <div class="filter-options">
               <label class="filter-option">
                 <input type="checkbox" id="featuredOnly" />
                 <span>Featured Items</span>
+              </label>
+              <label class="filter-option">
+                <input type="checkbox" id="bestSellerOnly" />
+                <span>Best Sellers</span>
               </label>
             </div>
           </div>
@@ -218,6 +230,28 @@
           <div class="selected-category-header" id="selectedCategoryHeader" style="display:none">
             <h2 class="active-category-title" id="activeCategoryTitle"></h2>
             <div class="active-subcategories-list" id="activeSubcategoriesList"></div>
+          </div>
+
+
+
+          <!-- Best Sellers Section (shown when a category is selected) -->
+          <div class="best-sellers-section" id="bestSellersSection" style="display:none">
+            <div class="best-sellers-header">
+              <div class="best-sellers-title-wrap">
+                <span class="best-sellers-icon">🔥</span>
+                <h3 class="best-sellers-title">Best Sellers</h3>
+              </div>
+              <p class="best-sellers-subtitle">Top picks in this category</p>
+            </div>
+            <div class="best-sellers-carousel-wrap">
+              <button class="best-sellers-nav prev" id="bsPrevBtn" aria-label="Previous">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <div class="best-sellers-grid" id="bestSellersGrid"></div>
+              <button class="best-sellers-nav next" id="bsNextBtn" aria-label="Next">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
           </div>
 
           <div class="products-grid-main" id="productsGrid">

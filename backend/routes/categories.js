@@ -28,14 +28,14 @@ router.get('/active', async (req, res) => {
 // CREATE category (admin only)
 router.post('/', protect, adminOnly, async (req, res) => {
   try {
-    const { name, description, active, parent, displayType, image } = req.body;
+    const { name, description, active, parent, displayType, image, posters } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Category name is required' });
 
     const slug = name.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
-    const category = await Category.create({ name, slug, description, active, parent, displayType, image });
+    const category = await Category.create({ name, slug, description, active, parent, displayType, image, posters });
     res.status(201).json({ success: true, category });
   } catch (err) {
     if (err.code === 11000) {
@@ -48,7 +48,7 @@ router.post('/', protect, adminOnly, async (req, res) => {
 // UPDATE category (admin only)
 router.put('/:id', protect, adminOnly, async (req, res) => {
   try {
-    const { name, description, active, parent, displayType, image } = req.body;
+    const { name, description, active, parent, displayType, image, posters } = req.body;
     const category = await Category.findById(req.params.id);
     if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
 
@@ -63,6 +63,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
     if (parent !== undefined) category.parent = parent || null;
     if (displayType !== undefined) category.displayType = displayType;
     if (image !== undefined) category.image = image;
+    if (posters !== undefined) category.posters = posters;
 
     await category.save();
     res.json({ success: true, category });
@@ -76,7 +77,7 @@ router.put('/:id', protect, adminOnly, async (req, res) => {
 
 router.patch('/:id', protect, adminOnly, async (req, res) => {
   try {
-    const { name, description, active, parent, displayType, image } = req.body;
+    const { name, description, active, parent, displayType, image, posters } = req.body;
     const category = await Category.findById(req.params.id);
     if (!category) return res.status(404).json({ success: false, message: 'Category not found' });
 
@@ -91,6 +92,7 @@ router.patch('/:id', protect, adminOnly, async (req, res) => {
     if (parent !== undefined) category.parent = parent || null;
     if (displayType !== undefined) category.displayType = displayType;
     if (image !== undefined) category.image = image;
+    if (posters !== undefined) category.posters = posters;
 
     await category.save();
     res.json({ success: true, category });
