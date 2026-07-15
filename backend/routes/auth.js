@@ -108,27 +108,44 @@ router.post('/login-request', async (req, res) => {
     }).sort({ approvedAt: -1 });
 
     if (approvedLogin) {
-      // Set session expiry to 3 hours from now
-      const sessionExpiry = new Date(Date.now() + 3 * 60 * 60 * 1000);
-      user.sessionExpiry = sessionExpiry;
-      await user.save();
+      // Check if this approved request is stale (approved before the user's current session expired or older than 3 hours)
+      const approvedAt = approvedLogin.approvedAt || approvedLogin.createdAt;
+      const isMoreThan3HoursOld = approvedAt && (new Date() - new Date(approvedAt) > 3 * 60 * 60 * 1000);
 
-      // Mark the login request as used
-      approvedLogin.status = 'used';
-      await approvedLogin.save();
+      const neverUsed = !user.sessionExpiry;
+      const sessionActive = user.sessionExpiry && new Date() <= user.sessionExpiry;
+      const approvedAfterSessionExpiry = user.sessionExpiry && approvedAt && new Date(approvedAt) > new Date(user.sessionExpiry);
 
-      const token = signSessionToken(user._id);
+      const isValid = (neverUsed || sessionActive || approvedAfterSessionExpiry) && !isMoreThan3HoursOld;
 
-      return res.json({
-        success: true,
-        directLogin: true,
-        token,
-        sessionExpiry: sessionExpiry.toISOString(),
-        user: {
-          id: user._id, name: user.name, email: user.email,
-          role: user.role, businessName: user.businessName
-        }
-      });
+      if (isValid) {
+        // Session is still valid or user has never logged in yet or request was approved after session expiry — allow direct login
+        const sessionExpiry = new Date(Date.now() + 3 * 60 * 60 * 1000);
+        user.sessionExpiry = sessionExpiry;
+        await user.save();
+
+        // Mark the login request as used
+        approvedLogin.status = 'used';
+        await approvedLogin.save();
+
+        const token = signSessionToken(user._id);
+
+        return res.json({
+          success: true,
+          directLogin: true,
+          token,
+          sessionExpiry: sessionExpiry.toISOString(),
+          user: {
+            id: user._id, name: user.name, email: user.email,
+            role: user.role, businessName: user.businessName
+          }
+        });
+      } else {
+        // Session has expired or request is older than 3 hours — mark as expired
+        approvedLogin.status = 'expired';
+        await approvedLogin.save();
+        // Fall through to create a new pending login request below
+      }
     }
 
     // Check if there's already a pending login request
@@ -202,6 +219,17 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'No approved login request found. Please submit a login request first.'
+      });
+    }
+
+    // Check if the approved login request is older than 3 hours
+    const approvedAt = approvedLogin.approvedAt || approvedLogin.createdAt;
+    if (approvedAt && (new Date() - new Date(approvedAt) > 3 * 60 * 60 * 1000)) {
+      approvedLogin.status = 'expired';
+      await approvedLogin.save();
+      return res.status(403).json({
+        success: false,
+        message: 'Approved login request has expired. Please submit a new login request.'
       });
     }
 

@@ -8,7 +8,7 @@ const loginRequestSchema = new mongoose.Schema({
   businessName:  { type: String, trim: true },
   contactNumber: { type: String, trim: true },
   businessCard:  { type: String, default: '' },
-  status:        { type: String, enum: ['pending', 'approved', 'rejected', 'used'], default: 'pending' },
+  status:        { type: String, enum: ['pending', 'approved', 'rejected', 'used', 'expired'], default: 'pending' },
   approvedAt:    { type: Date }
 }, { timestamps: true });
 

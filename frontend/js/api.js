@@ -55,9 +55,11 @@ const API = (() => {
     if (res.status === 401 && !['/auth/login', '/auth/login-request', '/auth/register-request'].includes(path)) {
       localStorage.removeItem('aa_token');
       localStorage.removeItem('aa_user');
-      window.location.href = '/?login=true';
+      localStorage.removeItem('aa_session_expiry');
+      window.location.href = '/auth';
       return;
     }
+
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Request failed');
@@ -73,7 +75,7 @@ const API = (() => {
     login:    (body) => req('POST', '/auth/login', body),
     register: (body) => req('POST', '/auth/register', body),
     me:       ()     => req('GET',  '/auth/me'),
-    logout: () => { localStorage.removeItem('aa_token'); localStorage.removeItem('aa_user'); },
+    logout: () => { localStorage.removeItem('aa_token'); localStorage.removeItem('aa_user'); localStorage.removeItem('aa_session_expiry'); },
 
     // Products
     getProducts:     (params) => req('GET', `/products?${new URLSearchParams(params)}`),
