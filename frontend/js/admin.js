@@ -768,7 +768,6 @@ async function initProductForm(product = null) {
     'pCategory': '',
     'pPrice': '',
     'pMrp': '',
-    'pWeight': '',
     'pStock': '9999',
     'pMinQuantity': '1',
     'pSku': '',
@@ -831,7 +830,6 @@ function fillProductForm(p) {
 
   document.getElementById('pPrice').value        = p.price !== undefined ? p.price : '';
   document.getElementById('pMrp').value          = p.mrp !== undefined ? p.mrp : '';
-  document.getElementById('pWeight').value       = p.weight !== undefined ? p.weight : '';
   document.getElementById('pStock').value        = p.stock !== undefined ? p.stock : 9999;
   document.getElementById('pMinQuantity').value  = p.minQuantity !== undefined ? p.minQuantity : 1;
   document.getElementById('pSku').value          = p.sku || '';
@@ -908,7 +906,6 @@ function renderVariations() {
       <input type="text" class="form-input var-size" placeholder="Size Name" value="${v.size || ''}" />
       <input type="number" class="form-input var-price" placeholder="Price" value="${v.price || ''}" min="0"/>
       <input type="number" class="form-input var-mrp" placeholder="MRP" value="${v.mrp || ''}" min="0"/>
-      <input type="number" class="form-input var-weight" placeholder="Wt.(kg)" value="${v.weight || ''}" min="0" step="0.001"/>
       <input type="number" class="form-input var-stock" placeholder="Stock" value="${v.stock !== undefined ? v.stock : 9999}" min="0" style="width:70px"/>
       <button type="button" class="btn-var-bulk" onclick="openVariationBulkModal(${i})">
         Bulk (${v.bulkPrices?.length || 0})
@@ -924,7 +921,6 @@ function syncVariationsFromUI() {
     size: row.querySelector('.var-size').value.trim(),
     price: parseFloat(row.querySelector('.var-price').value) || 0,
     mrp: parseFloat(row.querySelector('.var-mrp').value) || 0,
-    weight: parseFloat(row.querySelector('.var-weight').value) || 0,
     stock: parseInt(row.querySelector('.var-stock').value) >= 0 ? parseInt(row.querySelector('.var-stock').value) : 9999,
     bulkPrices: productVariations[i]?.bulkPrices || []
   }));
@@ -932,7 +928,7 @@ function syncVariationsFromUI() {
 
 function addVariationRow() {
   syncVariationsFromUI();
-  productVariations.push({ size: '', price: '', mrp: '', weight: '', stock: 999 });
+  productVariations.push({ size: '', price: '', mrp: '', stock: 999 });
   renderVariations();
 }
 
@@ -1040,7 +1036,6 @@ async function saveProduct() {
 
   const price  = parseFloat(document.getElementById('pPrice').value);
   const mrp    = parseFloat(document.getElementById('pMrp').value) || undefined;
-  const weight = parseFloat(document.getElementById('pWeight').value) || 0;
   const sku    = document.getElementById('pSku').value.trim() || undefined;
   const hsn    = document.getElementById('pHsn').value.trim() || undefined;
   const desc     = document.getElementById('pDescription').value.trim();
@@ -1053,7 +1048,7 @@ async function saveProduct() {
   }
 
   const payload = {
-    name, category, price, mrp, weight, sku, hsn,
+    name, category, price, mrp, sku, hsn,
     description: desc,
     tags:        tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
     colors:      colorsRaw ? colorsRaw.split(',').map(c => c.trim()).filter(Boolean) : [],
@@ -1758,7 +1753,6 @@ function addProductToManualOrder(pIdx, vIdx) {
   let color = "";
   let size = "";
   let price = p.price;
-  let weight = p.weight || 0;
   
   if (vIdx !== null && p.variations?.[vIdx]) {
     const v = p.variations[vIdx];
@@ -1766,7 +1760,6 @@ function addProductToManualOrder(pIdx, vIdx) {
     color = v.color || "";
     size = v.size || "";
     price = (v.price && v.price > 0) ? v.price : (p.price || 0); // Fallback to base product price if variation price is 0/unset
-    weight = v.weight || p.weight || 0;
   }
 
   const minQty = parseInt(p.minQuantity) || 1;
@@ -1783,8 +1776,6 @@ function addProductToManualOrder(pIdx, vIdx) {
       size,
       price,
       image: p.images?.[0]?.url || '',
-      weight,
-      baseWeight: p.weight || 0,
       basePrice: p.price || 0,    // Store base product price for fallback
       quantity: minQty,           // Start at MOQ, not 1
       minQuantity: minQty,        // Store MOQ for enforcement
@@ -1819,7 +1810,7 @@ function updateMoQuantity(index, qty) {
 function renderMoSelectedItems() {
   const tbody = document.getElementById('moSelectedItemsBody');
   if (moSelectedItems.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#999;">No products added yet</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#999;">No products added yet</td></tr>';
     updateMoTotals();
     return;
   }
@@ -1928,7 +1919,6 @@ function changeMoVariantByParts(index, type, value) {
     item.color = v.color || "";
     item.size  = v.size || "";
     item.price = (v.price && v.price > 0) ? v.price : item.basePrice || 0; // Fallback to base price
-    item.weight = v.weight || item.baseWeight || 0;
   } else if (type === 'color') {
     item.color = value;
   } else if (type === 'size') {
@@ -1956,18 +1946,12 @@ function changeMoVariant(itemIndex, newVariationId) {
   item.color = v.color || "";
   item.size = v.size || "";
   item.price = (v.price && v.price > 0) ? v.price : item.basePrice || 0; // Fallback to base product price
-  item.weight = v.weight || item.baseWeight || 0; // Fallback to base weight if variation doesn't have it
   
   renderMoSelectedItems();
 }
 
 function updateMoTotals() {
   const subtotal = moSelectedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const totalWeight = moSelectedItems.reduce((sum, item) => sum + ((parseFloat(item.weight) || 0) * item.quantity), 0);
-  const weightDisplay = document.getElementById('moWeightDisplay');
-  if (weightDisplay) {
-    weightDisplay.textContent = totalWeight.toFixed(3);
-  }
   const shippingInput = document.getElementById('moShippingCost');
   
   // Detect if the admin manually typed in the shipping cost input
@@ -1982,10 +1966,8 @@ function updateMoTotals() {
     // Calculate Auto Shipping
     const city = document.getElementById('moCity').value.trim();
     
-    if (totalWeight > 0 && city) {
+    if (city) {
       const isBranch = BRANCH_CITIES.some(c => c.toLowerCase() === city.toLowerCase());
-      const rate = isBranch ? 75 : 100;
-      shipping = Math.ceil(totalWeight) * rate;
 
       // Auto-select Skyking for branch cities
       if (isBranch) {
@@ -2302,36 +2284,57 @@ window.rejectLogin = async function(id) {
 };
 
 /* -- Authorised Users ---------------------------------- */
+let allAuthorisedUsers = [];
+
 async function loadUsers() {
   const tbody = document.getElementById('usersTableBody');
   if (!tbody) return;
+  
+  const searchInput = document.getElementById('usrFilterInput');
+  if (searchInput) searchInput.value = '';
+
   tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--mid)">Loading...</td></tr>';
   try {
     const data = await API.adminGetUsers();
-    const users = data.users || [];
-    const badge = document.getElementById('badgeUsers');
-    if (badge) badge.textContent = users.length;
-
-    if (!users.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No authorised users found.</td></tr>';
-      return;
-    }
-
-    tbody.innerHTML = users.map(u => `
-      <tr>
-        <td>${new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
-        <td><strong>${u.name}</strong></td>
-        <td>${u.email}</td>
-        <td>${u.businessName || '—'}</td>
-        <td>${u.contactNumber || '—'}</td>
-        <td>
-          <button class="btn-icon delete" onclick="deleteUser('${u._id}')" title="Remove User">🗑️</button>
-        </td>
-      </tr>
-    `).join('');
+    allAuthorisedUsers = data.users || [];
+    renderUsersTable(allAuthorisedUsers);
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#C62828">${err.message}</td></tr>`;
   }
+}
+
+function filterUsers() {
+  const query = document.getElementById('usrFilterInput').value.toLowerCase();
+  const filtered = allAuthorisedUsers.filter(u => 
+    (u.name && u.name.toLowerCase().includes(query)) || 
+    (u.businessName && u.businessName.toLowerCase().includes(query))
+  );
+  renderUsersTable(filtered);
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('usersTableBody');
+  if (!tbody) return;
+  const badge = document.getElementById('badgeUsers');
+  if (badge) badge.textContent = users.length;
+
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No authorised users found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td>${new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
+      <td><strong>${u.name}</strong></td>
+      <td>${u.email}</td>
+      <td>${u.businessName || '—'}</td>
+      <td>${u.contactNumber || '—'}</td>
+      <td>
+        <button class="btn-icon delete" onclick="deleteUser('${u._id}')" title="Remove User">🗑️</button>
+      </td>
+    </tr>
+  `).join('');
 }
 
 async function deleteUser(id) {

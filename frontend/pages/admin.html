@@ -673,8 +673,7 @@
 
                   <div class="form-group full">
                     <div style="background:#f9f9f9; padding:20px; border-radius:12px; text-align:right">
-                      <div style="font-size:1rem; color:var(--mid); margin-bottom:8px;">Total Weight: <span
-                          id="moWeightDisplay">0.000</span> kg</div>
+
                       <div style="font-size:1rem; color:var(--mid)">Subtotal: ₹<span id="moSubtotalDisplay">0</span>
                       </div>
                       <div style="font-size:1.2rem; font-weight:700; color:var(--teal); margin-top:8px">Total: ₹<span
@@ -969,10 +968,7 @@
                   </div>
                 </div>
 
-                <div class="form-group">
-                  <label class="form-label">Weight (kg) *</label>
-                  <input type="number" class="form-input" id="pWeight" placeholder="1.250" min="0" step="0.001" />
-                </div>
+
                 <div class="form-group">
                   <label class="form-label">Unit *</label>
                   <select class="form-input" id="pUnit">
@@ -1234,6 +1230,17 @@
                   style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
               </h3>
               <div class="admin-table-tools">
+                <!-- Dummy inputs to catch browser autofill -->
+                <input type="text" name="chrome_prevent_autofill_email" style="display:none;" />
+                <input type="password" name="chrome_prevent_autofill_pwd" style="display:none;" />
+                
+                <div style="position: relative; display: flex; align-items: center;">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="position: absolute; left: 12px; color: var(--mid); pointer-events: none;">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="search" id="usrFilterInput" autocomplete="new-password" class="form-input" style="width:250px; padding: 6px 12px 6px 34px; border-radius: 4px; border: 1px solid var(--border); font-size: 0.85rem;" placeholder="Search by name or business..." oninput="filterUsers()">
+                </div>
                 <button class="btn-outline-gold" onclick="loadUsers()">🔄 Refresh</button>
               </div>
             </div>

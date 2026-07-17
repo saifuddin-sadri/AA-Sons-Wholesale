@@ -4,14 +4,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await renderCart();
   renderRecommendations();
 
-  const toggle = document.getElementById('cartStorePickupToggle');
-  if (toggle) {
-    toggle.checked = sessionStorage.getItem('storePickup') === 'true';
-    toggle.addEventListener('change', (e) => {
-      sessionStorage.setItem('storePickup', e.target.checked ? 'true' : 'false');
-      renderSummary(Cart.get());
-    });
-  }
+
 });
 
 async function renderCart() {
@@ -165,11 +158,7 @@ async function changeItemVariant(cartItemId, newValue, type) {
 
 function renderSummary(items) {
   const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  // Default to 1kg if weight is totally unassigned, otherwise sum exact weight
-  let totalWeight = items.reduce((w, i) => w + (parseFloat(i.weight) || 0) * i.quantity, 0);
-  if (totalWeight === 0 && items.length > 0) {
-    totalWeight = 1; // Fallback so shipping isn't 0
-  }
+
   
   const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
   const shippingEl = document.getElementById('summaryShipping');
@@ -178,10 +167,6 @@ function renderSummary(items) {
   }
 
   document.getElementById('summarySubtotal').textContent = formatRupees(subtotal);
-  const weightEl = document.getElementById('summaryWeight');
-  if (weightEl) {
-    weightEl.textContent = totalWeight.toFixed(3) + ' kg';
-  }
   document.getElementById('summaryTotal').textContent = formatRupees(subtotal);
 }
 

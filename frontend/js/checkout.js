@@ -41,7 +41,7 @@ function renderCheckoutDetails() {
   const container = document.getElementById('checkoutUserDetails');
   if (!container) return;
 
-  const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
+  const isStorePickup = false;
 
   if (isStorePickup) {
     container.innerHTML = `
@@ -113,11 +113,7 @@ function renderOrderSummary() {
 
   document.getElementById('coSubtotal').textContent = formatRupees(subtotal);
   
-  const weightEl = document.getElementById('coWeight');
-  if (weightEl) {
-    let totalWeight = orderItems.reduce((w, i) => w + (parseFloat(i.weight) || 0) * i.quantity, 0);
-    weightEl.textContent = (totalWeight || 0).toFixed(3) + ' kg';
-  }
+
   
   const shipEl = document.getElementById('coShipping');
   const shipLine = document.getElementById('coShippingLine');
@@ -140,7 +136,7 @@ function initPlaceOrder() {
     const btnText = document.getElementById('placeOrderText');
     if (btnText) btnText.textContent = 'Placing Order...';
 
-    const isStorePickup = sessionStorage.getItem('storePickup') === 'true';
+    const isStorePickup = false;
     const notes = document.getElementById('orderNotes')?.value.trim() || '';
     const subtotal = orderItems.reduce((s, i) => s + i.price * i.quantity, 0);
     const city = currentUser.address?.city || '';

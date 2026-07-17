@@ -10,7 +10,6 @@ const productSchema = new mongoose.Schema({
   images:      [{ url: String, public_id: String }],
   stock:       { type: Number, default: 9999, min: 0 },
   minQuantity: { type: Number, default: 1, min: 1 },
-  weight:      { type: Number, default: 0, min: 0 },
   sku:         { type: String, trim: true },
   hsn:         { type: String, trim: true },
   unit:        { type: String, enum: ['kg', 'm', 'pcs', 'packet'], default: 'pcs' },
@@ -25,7 +24,6 @@ const productSchema = new mongoose.Schema({
     price: { type: Number, required: true, min: 0 },
     mrp:   { type: Number, min: 0 },
     stock: { type: Number, default: 9999, min: 0 },
-    weight:{ type: Number, min: 0 },
     bulkPrices: [{
       quantity: { type: Number, required: true },
       unit:     { type: String, default: 'Pcs' },

@@ -758,13 +758,12 @@ function initAddToCart() {
   btn.addEventListener('click', () => {
     let cartVar = currentVariation ? { ...currentVariation } : null;
     if (selectedBulkTier) {
-       cartVar = { 
-         size: `${selectedBulkTier.quantity} ${selectedBulkTier.unit || 'Pcs'}`,
-         price: selectedBulkTier.price,
-         mrp: selectedBulkTier.mrp,
-         weight: product.weight || 0,
-         _id: `bulk_${selectedBulkTier.quantity}`
-       };
+        cartVar = { 
+          size: `${selectedBulkTier.quantity} ${selectedBulkTier.unit || 'Pcs'}`,
+          price: selectedBulkTier.price,
+          mrp: selectedBulkTier.mrp,
+          _id: `bulk_${selectedBulkTier.quantity}`
+        };
     }
 
     let currentStock = product?.stock || 999;

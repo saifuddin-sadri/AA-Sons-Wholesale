@@ -45,7 +45,6 @@ const Cart = (() => {
         quantity: parseInt(qty),
         minQuantity: parseInt(product.minQuantity) || 1,
         stock: maxStock,
-        weight: variation && variation.weight > 0 ? variation.weight : (product.weight || 0),
         recentSales: product.recentSales || 0
       });
     }
