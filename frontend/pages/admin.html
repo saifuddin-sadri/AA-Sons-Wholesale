@@ -606,6 +606,8 @@
                         oninput="handleMoProductSearchInput(this.value)" />
                       <button type="button" class="btn-admin-primary"
                         onclick="searchProductsForManualOrder()">Search</button>
+                      <button type="button" class="btn-admin-gold"
+                        onclick="openCustomProductModal()">Add Product</button>
                     </div>
                     <div id="moProductSearchResults"
                       style="max-height:200px; overflow-y:auto; border:1px solid #ddd; border-radius:8px; margin-bottom:15px; display:none; background:white;">
@@ -1419,6 +1421,46 @@
         <button class="modal-close" onclick="closeModal('loginRequestModal')">✕</button>
       </div>
       <div class="modal-body" id="loginRequestModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Custom Product Modal -->
+  <div class="modal-overlay" id="customProductModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header">
+        <h3>Add Custom Product</h3>
+        <button class="modal-close" onclick="closeModal('customProductModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group full" style="margin-bottom:16px">
+          <label class="form-label">Product Name *</label>
+          <input type="text" class="form-input" id="cpName" placeholder="e.g. Custom Bridal Lehenga" required />
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">Size</label>
+            <input type="text" class="form-input" id="cpSize" placeholder="e.g. XL, 42" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Colour</label>
+            <input type="text" class="form-input" id="cpColor" placeholder="e.g. Maroon" />
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px">
+          <div class="form-group">
+            <label class="form-label">Price (₹) *</label>
+            <input type="number" class="form-input" id="cpPrice" placeholder="e.g. 5000" min="0" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantity *</label>
+            <input type="number" class="form-input" id="cpQuantity" value="1" min="1" required />
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px">
+          <button type="button" class="btn-admin-secondary" style="padding:14px; width:100%" onclick="closeModal('customProductModal')">Cancel</button>
+          <button type="button" class="btn-admin-primary" style="padding:14px; width:100%" onclick="addCustomProductToOrder()">Add to Order</button>
+        </div>
+      </div>
     </div>
   </div>
 

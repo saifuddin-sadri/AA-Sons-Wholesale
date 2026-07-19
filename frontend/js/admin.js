@@ -2000,14 +2000,15 @@ async function submitManualOrder(event) {
   
   const orderData = {
     items: moSelectedItems.map(item => ({
-      productId: item.productId,
-      variationId: item.variationId,
+      productId: item.productId || null,
+      variationId: item.variationId || null,
       price: item.price,
       quantity: item.quantity,
       image: item.image,
       name: item.name,
       color: item.color,
-      size: item.size
+      size: item.size,
+      isCustom: !!item.isCustom
     })),
     shippingAddress: {
       name: document.getElementById('moCustomerName').value.trim(),
@@ -2039,6 +2040,47 @@ async function submitManualOrder(event) {
     btn.disabled = false;
     btn.textContent = 'Create Manual Order';
   }
+}
+
+/* ── Custom Product Modal ────────────────────────────── */
+function openCustomProductModal() {
+  document.getElementById('cpName').value = '';
+  document.getElementById('cpSize').value = '';
+  document.getElementById('cpColor').value = '';
+  document.getElementById('cpPrice').value = '';
+  document.getElementById('cpQuantity').value = '1';
+  document.getElementById('customProductModal').classList.add('open');
+}
+
+function addCustomProductToOrder() {
+  const name = document.getElementById('cpName').value.trim();
+  const size = document.getElementById('cpSize').value.trim();
+  const color = document.getElementById('cpColor').value.trim();
+  const price = parseFloat(document.getElementById('cpPrice').value);
+  const quantity = parseInt(document.getElementById('cpQuantity').value) || 1;
+
+  if (!name) return showToast('Product name is required', 'error');
+  if (isNaN(price) || price <= 0) return showToast('Please enter a valid price', 'error');
+  if (quantity < 1) return showToast('Quantity must be at least 1', 'error');
+
+  moSelectedItems.push({
+    productId: null,
+    variationId: null,
+    name,
+    color,
+    size,
+    price,
+    image: '',
+    quantity,
+    minQuantity: 1,
+    isCustom: true,
+    allVariations: [],
+    availableColors: []
+  });
+
+  closeModal('customProductModal');
+  renderMoSelectedItems();
+  showToast('Custom product added to order', 'success');
 }
 
 /* ── Registration & Login Requests ──────────────────── */

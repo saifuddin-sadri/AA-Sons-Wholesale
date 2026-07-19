@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
-  product:     { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+  product:     { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
   variationId: { type: String },
   color:       { type: String },
   size:        { type: String },
@@ -10,7 +10,8 @@ const orderItemSchema = new mongoose.Schema({
   name:        { type: String, required: true },
   image:       String,
   price:       { type: Number, required: true },
-  quantity:    { type: Number, required: true, min: 1 }
+  quantity:    { type: Number, required: true, min: 1 },
+  isCustom:    { type: Boolean, default: false }
 });
 
 const orderSchema = new mongoose.Schema({

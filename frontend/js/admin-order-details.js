@@ -230,9 +230,13 @@ function renderOrderDetails(o) {
             <img src="${item.image || '/logo.png'}" class="order-item-img" alt="${item.name}"/>
             <div style="flex:1">
               <div style="font-weight:600; font-size:1rem;">
-                <a href="/product-detail?id=${item.product?._id || item.product}" target="_blank" style="text-decoration:none; color:inherit;">
-                  ${item.name}
-                </a>
+                ${item.product ? `
+                  <a href="/product-detail?id=${item.product?._id || item.product}" target="_blank" style="text-decoration:none; color:inherit;">
+                    ${item.name}
+                  </a>
+                ` : `
+                  <span>${item.name}</span>
+                `}
               </div>
               <div style="font-size:.84rem; color:var(--mid); margin-top:4px;">
                 ${item.size ? `<strong>Size:</strong> ${item.size} | ` : ''}

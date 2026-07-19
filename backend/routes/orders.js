@@ -321,6 +321,31 @@ router.post('/admin/manual-order', protect, adminOnly, async (req, res) => {
     const orderItems = [];
     
     for (const item of items) {
+      // Handle custom products (not in database)
+      if (item.isCustom) {
+        const customName = item.name || 'Custom Product';
+        let orderItemName = customName;
+        const variantColor = item.color || '';
+        const variantSize = item.size || '';
+        if (variantColor || variantSize) {
+          let vars = [];
+          if (variantColor) vars.push(variantColor);
+          if (variantSize) vars.push(variantSize);
+          orderItemName += ` (${vars.join(' - ')})`;
+        }
+        orderItems.push({
+          name: orderItemName,
+          color: variantColor,
+          size: variantSize,
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          isCustom: true,
+          image: item.image || ''
+        });
+        calculatedSubtotal += ((item.price || 0) * (item.quantity || 1));
+        continue;
+      }
+
       const product = await Product.findById(item.productId);
       if (!product) continue;
 
