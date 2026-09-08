@@ -362,9 +362,8 @@ function renderCurrentPage() {
         subs.forEach(s => grid.appendChild(buildCategoryCard(s)));
         
         document.getElementById('paginationWrap').style.display = 'none';
-        const bsSection2 = document.getElementById('bestSellersSection');
-        if (bsSection2) bsSection2.style.display = 'none';
         updateCategoryHeaderDisplay();
+        loadBestSellers();
         return;
       }
     }
@@ -1303,8 +1302,20 @@ async function loadBestSellers() {
 
   try {
     const catParam = checkedCats.join(',');
-    const data = await API.getProducts({ category: catParam, bestSeller: true, limit: 20 });
-    const products = data.products || [];
+    let data = await API.getProducts({ category: catParam, bestSeller: true, limit: 20 });
+    let products = data.products || [];
+
+    // Fallback: If no bestSeller products found, fetch featured products in that category
+    if (products.length === 0) {
+      data = await API.getProducts({ category: catParam, featured: true, limit: 20 });
+      products = data.products || [];
+    }
+
+    // Secondary Fallback: Fetch any top products in that category
+    if (products.length === 0) {
+      data = await API.getProducts({ category: catParam, limit: 20, sort: '-createdAt' });
+      products = data.products || [];
+    }
 
     if (products.length === 0) {
       section.style.display = 'none';

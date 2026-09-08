@@ -133,8 +133,34 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="/js/api.js?v=1.0.3"></script>
-  <script src="/js/admin-order-details.js?v=1.0.3"></script>
+  <!-- Edit Order Modal -->
+  <div class="edit-order-backdrop" id="editOrderBackdrop" onclick="closeEditOrderModal()"></div>
+  <div class="edit-order-modal" id="editOrderModal">
+    <div class="edit-order-header">
+      <h2>✏️ Edit Order — <span id="editOrderNumber"></span></h2>
+      <button class="edit-order-close" onclick="closeEditOrderModal()">×</button>
+    </div>
+    <div class="edit-order-body" id="editOrderBody"></div>
+    <div class="edit-order-footer">
+      <button class="btn-edit-cancel" onclick="closeEditOrderModal()">Cancel</button>
+      <button class="btn-edit-save" onclick="saveEditOrder()">Save Changes</button>
+    </div>
+  </div>
+
+  <!-- Catalog Product Picker -->
+  <div class="catalog-picker-backdrop" id="catalogPickerBackdrop" onclick="closeCatalogPicker()"></div>
+  <div class="catalog-picker-modal" id="catalogPickerModal">
+    <div class="catalog-picker-header">
+      <h3>📦 Search Catalog Products</h3>
+      <input type="text" class="catalog-picker-search" id="catalogPickerSearch" placeholder="Search by name…" oninput="searchCatalogProducts()" />
+    </div>
+    <div class="catalog-picker-results" id="catalogPickerResults">
+      <p style="text-align:center;color:var(--mid);padding:20px">Type to search products…</p>
+    </div>
+  </div>
+
+  <script src="/js/api.js?v=1.0.4"></script>
+  <script src="/js/admin-order-details.js?v=1.0.4"></script>
 </body>
 
 </html>

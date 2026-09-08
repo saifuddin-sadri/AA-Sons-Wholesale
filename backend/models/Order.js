@@ -34,15 +34,15 @@ const orderSchema = new mongoose.Schema({
   },
   subtotal:     { type: Number, required: true },
   shippingCost: { type: Number, default: 0 },
+  packagingFee: { type: Number, default: 0 },
   total:        { type: Number, required: true },
-  paymentMethod: { type: String, enum: ['online', 'upi', 'cod'], default: 'cod' },
-  paymentStatus: { type: String, enum: ['pending', 'paid', 'failed', 'refunded'], default: 'pending' },
+  paymentMethod: { type: String, default: 'cod' },
+  paymentStatus: { type: String, default: 'pending' },
   paymentId:     String,
   paymentScreenshot: String,
   razorpayOrderId: String,
   status: {
     type: String,
-    enum: ['payment_pending', 'payment_received', 'placed', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
     default: 'placed'
   },
   statusHistory: [{

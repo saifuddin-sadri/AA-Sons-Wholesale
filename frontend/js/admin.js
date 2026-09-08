@@ -305,10 +305,10 @@ async function loadOrders() {
         <td><span class="badge badge-${o.status}">${o.status}</span></td>
         <td style="font-size:.78rem">${new Date(o.createdAt).toLocaleDateString('en-IN')}</td>
         <td>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <button class="btn-icon view" onclick="viewOrder('${o._id}')" title="View Detail" style="width:auto; padding:4px 8px;">View Detail</button>
-            <button class="btn-icon view" onclick="window.open('/invoice?id=${o._id}', '_blank')" title="Invoice" style="width:auto; padding:4px 8px; background:var(--teal); color:white;">Invoice</button>
-            <button class="btn-icon view" onclick="window.open('/worker-bill?id=${o._id}', '_blank')" title="Worker Bill" style="width:auto; padding:4px 8px; background:var(--gold); color:white;">Worker Bill</button>
+          <div style="display:flex; gap:6px; align-items:center; flex-wrap:nowrap; white-space:nowrap;">
+            <button class="btn-icon view" onclick="viewOrder('${o._id}')" title="View Detail" style="width:auto; padding:4px 8px; white-space:nowrap;">View Detail</button>
+            <button class="btn-icon view" onclick="window.open('/invoice?id=${o._id}', '_blank')" title="Invoice" style="width:auto; padding:4px 8px; background:var(--teal); color:white; white-space:nowrap;">Invoice</button>
+            <button class="btn-icon view" onclick="window.open('/worker-bill?id=${o._id}', '_blank')" title="Worker Bill" style="width:auto; padding:4px 8px; background:var(--gold); color:white; white-space:nowrap;">Worker Bill</button>
           </div>
         </td>
       </tr>`).join('');
@@ -1707,7 +1707,7 @@ async function searchProductsForManualOrder() {
     }
     
     resultsDiv.innerHTML = moSearchResults.map((p, pIdx) => {
-      const imgUrl = p.images?.[0]?.url || '/images/placeholder.png';
+      const imgUrl = (typeof p.images?.[0] === 'object' ? p.images[0]?.url : p.images?.[0]) || '/images/placeholder.svg';
       const moq = p.minQuantity || 1;
       const moqBadge = moq > 1 ? `<span style="font-size:0.68rem; background:#fff3e0; color:#e65100; padding:1px 6px; border-radius:4px; font-weight:700; margin-left:4px;">MOQ: ${moq}</span>` : '';
       // If product has variations, list them so admin can add a specific one initially
@@ -1875,7 +1875,7 @@ function renderMoSelectedItems() {
       <tr>
         <td data-label="Product">
           <div style="display:flex; align-items:center; gap:10px;">
-            <img src="${item.image || '/images/placeholder.png'}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; flex-shrink:0;" />
+            <img src="${item.image || (typeof item.product?.images?.[0] === 'object' ? item.product.images[0]?.url : item.product?.images?.[0]) || '/images/placeholder.svg'}" style="width:40px; height:40px; object-fit:cover; border-radius:4px; flex-shrink:0;" />
             <div style="min-width:0;">
               <div style="font-weight:600; font-size:0.85rem; word-break:break-word;">${item.name}</div>
               ${moqBadge}
@@ -2388,4 +2388,365 @@ async function deleteUser(id) {
   } catch (err) {
     showToast(err.message, 'error');
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   EDIT ORDER MODAL — Full Logic
+══════════════════════════════════════════════════════════ */
+let editOrderData = null;  // Holds the working copy of the order being edited
+let editOrderItems = [];   // Working copy of items
+
+async function openEditOrderModal(orderId) {
+  try {
+    const data = await API.adminGetOrder(orderId);
+    editOrderData = JSON.parse(JSON.stringify(data.order || data));
+    editOrderItems = (editOrderData.items || []).map(it => ({
+      productId: it.product?._id || it.product || null,
+      name: it.name || it.product?.name || 'Unknown',
+      image: it.image || (typeof it.product?.images?.[0] === 'object' ? it.product.images[0]?.url : it.product?.images?.[0]) || '/images/placeholder.svg',
+      variant: it.variant || '',
+      size: it.size || '',
+      color: it.color || '',
+      price: it.price || 0,
+      quantity: it.quantity || 1,
+      isCustom: !it.product || it.isCustom || false
+    }));
+
+    document.getElementById('editOrderNumber').textContent = editOrderData.orderNumber || editOrderData._id?.slice(-8);
+    renderEditOrderBody();
+    document.getElementById('editOrderBackdrop').classList.add('open');
+    document.getElementById('editOrderModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  } catch (err) {
+    showToast('Failed to load order: ' + err.message, 'error');
+  }
+}
+
+function closeEditOrderModal() {
+  document.getElementById('editOrderBackdrop').classList.remove('open');
+  document.getElementById('editOrderModal').classList.remove('open');
+  document.body.style.overflow = '';
+  editOrderData = null;
+  editOrderItems = [];
+}
+
+function renderEditOrderBody() {
+  const o = editOrderData;
+  const addr = o.shippingAddress || {};
+  const body = document.getElementById('editOrderBody');
+
+  body.innerHTML = `
+    <!-- Customer & Shipping Info -->
+    <div class="edit-order-section">
+      <h3>📋 Order & Shipping Info</h3>
+      <div class="edit-order-grid">
+        <div>
+          <label class="edit-order-label">Customer Name</label>
+          <input class="edit-order-input" id="eoCustomerName" value="${escHtml(o.customerName || o.user?.name || '')}" />
+        </div>
+        <div>
+          <label class="edit-order-label">Phone</label>
+          <input class="edit-order-input" id="eoPhone" value="${escHtml(addr.phone || o.user?.contactNumber || '')}" />
+        </div>
+        <div>
+          <label class="edit-order-label">Email</label>
+          <input class="edit-order-input" id="eoEmail" value="${escHtml(o.user?.email || '')}" />
+        </div>
+        <div class="wide">
+          <label class="edit-order-label">Street / Address Line</label>
+          <input class="edit-order-input" id="eoStreet" value="${escHtml(addr.street || addr.addressLine || '')}" />
+        </div>
+        <div>
+          <label class="edit-order-label">City</label>
+          <input class="edit-order-input" id="eoCity" value="${escHtml(addr.city || '')}" />
+        </div>
+        <div>
+          <label class="edit-order-label">State</label>
+          <input class="edit-order-input" id="eoState" value="${escHtml(addr.state || '')}" />
+        </div>
+        <div>
+          <label class="edit-order-label">Pincode</label>
+          <input class="edit-order-input" id="eoPincode" value="${escHtml(addr.pincode || addr.zip || '')}" />
+        </div>
+        <div>
+          <label class="edit-order-label">Payment Method</label>
+          <select class="edit-order-input" id="eoPaymentMethod">
+            <option value="COD" ${o.paymentMethod === 'COD' ? 'selected' : ''}>COD</option>
+            <option value="Online" ${o.paymentMethod === 'Online' ? 'selected' : ''}>Online</option>
+            <option value="UPI" ${o.paymentMethod === 'UPI' ? 'selected' : ''}>UPI</option>
+            <option value="Bank Transfer" ${o.paymentMethod === 'Bank Transfer' ? 'selected' : ''}>Bank Transfer</option>
+          </select>
+        </div>
+        <div>
+          <label class="edit-order-label">Payment Status</label>
+          <select class="edit-order-input" id="eoPaymentStatus">
+            <option value="Pending" ${o.paymentStatus === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Paid" ${o.paymentStatus === 'Paid' ? 'selected' : ''}>Paid</option>
+            <option value="Failed" ${o.paymentStatus === 'Failed' ? 'selected' : ''}>Failed</option>
+          </select>
+        </div>
+        <div>
+          <label class="edit-order-label">Order Status</label>
+          <select class="edit-order-input" id="eoStatus">
+            <option value="Pending" ${o.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option value="Confirmed" ${o.status === 'Confirmed' ? 'selected' : ''}>Confirmed</option>
+            <option value="Processing" ${o.status === 'Processing' ? 'selected' : ''}>Processing</option>
+            <option value="Shipped" ${o.status === 'Shipped' ? 'selected' : ''}>Shipped</option>
+            <option value="Delivered" ${o.status === 'Delivered' ? 'selected' : ''}>Delivered</option>
+            <option value="Cancelled" ${o.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+          </select>
+        </div>
+        <div class="wide">
+          <div class="edit-order-store-pickup">
+            <input type="checkbox" id="eoStorePickup" ${o.storePickup ? 'checked' : ''} />
+            <span>Store Pickup (no shipping required)</span>
+          </div>
+        </div>
+        <div class="wide">
+          <label class="edit-order-label">Admin Notes</label>
+          <textarea class="edit-order-input" id="eoNotes" rows="2" placeholder="Internal notes…">${escHtml(o.notes || o.adminNotes || '')}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Products -->
+    <div class="edit-order-section">
+      <div class="edit-order-products-header">
+        <h3>📦 Products</h3>
+        <div class="edit-order-products-btns">
+          <button class="btn-add-catalog" onclick="openCatalogPicker()">+ From Catalog</button>
+          <button class="btn-add-custom" onclick="addCustomItem()">+ Custom Item</button>
+        </div>
+      </div>
+      <div id="eoItemsList">
+        ${editOrderItems.map((it, i) => renderEditOrderItem(it, i)).join('')}
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="edit-order-summary">
+      <h3>💰 Order Summary</h3>
+      <div class="edit-order-summary-row">
+        <span>Subtotal</span>
+        <span class="edit-order-summary-val" id="eoSubtotal">₹0</span>
+      </div>
+      <div class="edit-order-summary-row">
+        <span>Shipping Fee</span>
+        <input class="edit-order-summary-input" id="eoShippingFee" type="number" min="0" value="${o.shippingFee || 0}" onchange="recalcEditTotals()" />
+      </div>
+      <div class="edit-order-summary-row">
+        <span>Packaging Fee</span>
+        <input class="edit-order-summary-input" id="eoPackagingFee" type="number" min="0" value="${o.packagingFee || 0}" onchange="recalcEditTotals()" />
+      </div>
+      <div class="edit-order-summary-row">
+        <span>Discount</span>
+        <input class="edit-order-summary-input" id="eoDiscount" type="number" min="0" value="${o.discount || 0}" onchange="recalcEditTotals()" />
+      </div>
+      <div class="edit-order-summary-row total">
+        <span>Grand Total</span>
+        <span class="edit-order-summary-val" id="eoGrandTotal">₹0</span>
+      </div>
+    </div>
+  `;
+
+  recalcEditTotals();
+}
+
+function renderEditOrderItem(it, idx) {
+  const total = (it.price * it.quantity).toFixed(2);
+  const imgSrc = it.image || '/images/placeholder.png';
+  return `
+    <div class="edit-order-item" data-idx="${idx}">
+      <img class="edit-order-item-img" src="${imgSrc}" alt="" onerror="this.src='/images/placeholder.png'" />
+      <div class="edit-order-item-details">
+        <input class="edit-order-item-name-input" value="${escHtml(it.name)}" onchange="editOrderItems[${idx}].name=this.value" />
+        <div class="edit-order-item-variants">
+          <input class="edit-order-item-variant-input" placeholder="Variant" value="${escHtml(it.variant)}" onchange="editOrderItems[${idx}].variant=this.value" />
+          <input class="edit-order-item-variant-input" placeholder="Size" value="${escHtml(it.size)}" onchange="editOrderItems[${idx}].size=this.value" />
+          <input class="edit-order-item-variant-input" placeholder="Color" value="${escHtml(it.color)}" onchange="editOrderItems[${idx}].color=this.value" />
+        </div>
+      </div>
+      <div class="edit-order-item-pricing">
+        <div>
+          <label>Price (₹)</label>
+          <input class="edit-order-item-price-input" type="number" min="0" value="${it.price}" onchange="editOrderItems[${idx}].price=+this.value; recalcEditTotals()" />
+        </div>
+        <div>
+          <label>Qty</label>
+          <input class="edit-order-item-qty-input" type="number" min="1" value="${it.quantity}" onchange="editOrderItems[${idx}].quantity=+this.value; recalcEditTotals()" />
+        </div>
+      </div>
+      <div class="edit-order-item-total">
+        <label>Total</label>
+        <span class="edit-order-item-total-val">₹${total}</span>
+      </div>
+      <button class="edit-order-item-remove" onclick="removeEditItem(${idx})" title="Remove item">✕</button>
+    </div>
+  `;
+}
+
+function recalcEditTotals() {
+  let subtotal = 0;
+  editOrderItems.forEach((it, i) => {
+    const t = it.price * it.quantity;
+    subtotal += t;
+    const el = document.querySelector(`.edit-order-item[data-idx="${i}"] .edit-order-item-total-val`);
+    if (el) el.textContent = '₹' + t.toFixed(2);
+  });
+  const shipping = parseFloat(document.getElementById('eoShippingFee')?.value) || 0;
+  const packaging = parseFloat(document.getElementById('eoPackagingFee')?.value) || 0;
+  const discount = parseFloat(document.getElementById('eoDiscount')?.value) || 0;
+  const grand = subtotal + shipping + packaging - discount;
+
+  const subEl = document.getElementById('eoSubtotal');
+  const grandEl = document.getElementById('eoGrandTotal');
+  if (subEl) subEl.textContent = '₹' + subtotal.toFixed(2);
+  if (grandEl) grandEl.textContent = '₹' + grand.toFixed(2);
+}
+
+function removeEditItem(idx) {
+  editOrderItems.splice(idx, 1);
+  document.getElementById('eoItemsList').innerHTML = editOrderItems.map((it, i) => renderEditOrderItem(it, i)).join('');
+  recalcEditTotals();
+}
+
+function addCustomItem() {
+  editOrderItems.push({
+    productId: null,
+    name: 'Custom Product',
+    image: '/images/placeholder.svg',
+    variant: '',
+    size: '',
+    color: '',
+    price: 0,
+    quantity: 1,
+    isCustom: true
+  });
+  document.getElementById('eoItemsList').innerHTML = editOrderItems.map((it, i) => renderEditOrderItem(it, i)).join('');
+  recalcEditTotals();
+}
+
+/* Catalog Picker */
+let catalogAllProducts = [];
+
+async function openCatalogPicker() {
+  document.getElementById('catalogPickerBackdrop').classList.add('open');
+  document.getElementById('catalogPickerModal').classList.add('open');
+  document.getElementById('catalogPickerSearch').value = '';
+  document.getElementById('catalogPickerResults').innerHTML = '<p style="text-align:center;color:var(--mid);padding:20px">Loading products…</p>';
+  try {
+    const data = await API.adminGetProducts({ limit: 500 });
+    catalogAllProducts = data.products || data || [];
+    document.getElementById('catalogPickerResults').innerHTML = '<p style="text-align:center;color:var(--mid);padding:20px">Type to search products…</p>';
+  } catch (err) {
+    document.getElementById('catalogPickerResults').innerHTML = '<p style="text-align:center;color:red;padding:20px">Failed to load products</p>';
+  }
+}
+
+function closeCatalogPicker() {
+  document.getElementById('catalogPickerBackdrop').classList.remove('open');
+  document.getElementById('catalogPickerModal').classList.remove('open');
+}
+
+function searchCatalogProducts() {
+  const q = document.getElementById('catalogPickerSearch').value.trim().toLowerCase();
+  if (!q) {
+    document.getElementById('catalogPickerResults').innerHTML = '<p style="text-align:center;color:var(--mid);padding:20px">Type to search products…</p>';
+    return;
+  }
+  const matches = catalogAllProducts.filter(p => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q)).slice(0, 20);
+  if (!matches.length) {
+    document.getElementById('catalogPickerResults').innerHTML = '<p style="text-align:center;color:var(--mid);padding:20px">No products found</p>';
+    return;
+  }
+  document.getElementById('catalogPickerResults').innerHTML = matches.map(p => `
+    <div class="catalog-picker-item" onclick='pickCatalogProduct(${JSON.stringify({
+      id: p._id,
+      name: p.name,
+      image: (typeof p.images?.[0] === 'object' ? p.images[0]?.url : p.images?.[0]) || '/images/placeholder.svg',
+      price: p.wholesalePrice || p.price || 0,
+      variant: p.variant || '',
+      size: p.size || '',
+      color: p.color || ''
+    }).replace(/'/g, "&#39;")})'>
+      <img src="${(typeof p.images?.[0] === 'object' ? p.images[0]?.url : p.images?.[0]) || '/images/placeholder.svg'}" alt="" onerror="this.src='/images/placeholder.svg'" />
+      <div class="catalog-picker-item-info">
+        <div class="catalog-picker-item-name">${escHtml(p.name)}</div>
+        <div class="catalog-picker-item-price">₹${(p.wholesalePrice || p.price || 0).toLocaleString('en-IN')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function pickCatalogProduct(prod) {
+  editOrderItems.push({
+    productId: prod.id,
+    name: prod.name,
+    image: prod.image,
+    variant: prod.variant || '',
+    size: prod.size || '',
+    color: prod.color || '',
+    price: prod.price,
+    quantity: 1,
+    isCustom: false
+  });
+  closeCatalogPicker();
+  document.getElementById('eoItemsList').innerHTML = editOrderItems.map((it, i) => renderEditOrderItem(it, i)).join('');
+  recalcEditTotals();
+}
+
+/* Save edited order */
+async function saveEditOrder() {
+  if (!editOrderData) return;
+  const saveBtn = document.querySelector('.btn-edit-save');
+  try {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving…';
+
+    const payload = {
+      customerName: document.getElementById('eoCustomerName')?.value || '',
+      shippingAddress: {
+        street: document.getElementById('eoStreet')?.value || '',
+        city: document.getElementById('eoCity')?.value || '',
+        state: document.getElementById('eoState')?.value || '',
+        pincode: document.getElementById('eoPincode')?.value || '',
+        phone: document.getElementById('eoPhone')?.value || ''
+      },
+      items: editOrderItems.map(it => ({
+        product: it.productId || undefined,
+        name: it.name,
+        image: it.image,
+        variant: it.variant,
+        size: it.size,
+        color: it.color,
+        price: +it.price,
+        quantity: +it.quantity,
+        isCustom: it.isCustom
+      })),
+      paymentMethod: document.getElementById('eoPaymentMethod')?.value || 'COD',
+      paymentStatus: document.getElementById('eoPaymentStatus')?.value || 'Pending',
+      status: document.getElementById('eoStatus')?.value || editOrderData.status,
+      storePickup: document.getElementById('eoStorePickup')?.checked || false,
+      shippingFee: parseFloat(document.getElementById('eoShippingFee')?.value) || 0,
+      packagingFee: parseFloat(document.getElementById('eoPackagingFee')?.value) || 0,
+      discount: parseFloat(document.getElementById('eoDiscount')?.value) || 0,
+      notes: document.getElementById('eoNotes')?.value || ''
+    };
+
+    await API.adminUpdateOrder(editOrderData._id, payload);
+    showToast('Order updated successfully!', 'success');
+    closeEditOrderModal();
+    // Refresh the orders list
+    if (typeof loadOrders === 'function') loadOrders();
+  } catch (err) {
+    showToast('Failed to save: ' + err.message, 'error');
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Changes';
+  }
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }

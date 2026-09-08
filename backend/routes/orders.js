@@ -425,6 +425,82 @@ router.post('/admin/manual-order', protect, adminOnly, async (req, res) => {
   }
 });
 
+// ═══ Admin: Full Edit Order ═══
+router.put('/admin/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    const {
+      customerName, shippingAddress, items, paymentMethod, paymentStatus,
+      status, storePickup, shippingFee, packagingFee, discount, notes
+    } = req.body;
+
+    // Update shipping address
+    if (shippingAddress) {
+      order.shippingAddress = {
+        ...order.shippingAddress,
+        name: customerName || shippingAddress.name || order.shippingAddress?.name,
+        street: shippingAddress.street || order.shippingAddress?.street,
+        city: shippingAddress.city || order.shippingAddress?.city,
+        state: shippingAddress.state || order.shippingAddress?.state,
+        pincode: shippingAddress.pincode || order.shippingAddress?.pincode,
+        phone: shippingAddress.phone || order.shippingAddress?.phone
+      };
+    }
+
+    // Update items
+    if (items && Array.isArray(items)) {
+      let subtotal = 0;
+      const orderItems = items.map(it => {
+        const lineTotal = (it.price || 0) * (it.quantity || 1);
+        subtotal += lineTotal;
+        return {
+          product: it.product || undefined,
+          name: it.name || 'Custom Product',
+          image: it.image || '',
+          variant: it.variant || '',
+          size: it.size || '',
+          color: it.color || '',
+          price: it.price || 0,
+          quantity: it.quantity || 1,
+          isCustom: it.isCustom || false
+        };
+      });
+      order.items = orderItems;
+      order.subtotal = subtotal;
+
+      // Recalculate total
+      const sf = shippingFee !== undefined ? shippingFee : (order.shippingFee || order.shippingCost || 0);
+      const pf = packagingFee !== undefined ? packagingFee : (order.packagingFee || 0);
+      const disc = discount !== undefined ? discount : (order.discount || 0);
+      order.total = subtotal + sf + pf - disc;
+    }
+
+    // Update fees
+    if (shippingFee !== undefined) order.shippingFee = shippingFee;
+    if (shippingFee !== undefined) order.shippingCost = shippingFee; // Backward compat
+    if (packagingFee !== undefined) order.packagingFee = packagingFee;
+    if (discount !== undefined) order.discount = discount;
+
+    // Update payment and status
+    if (paymentMethod) order.paymentMethod = paymentMethod;
+    if (paymentStatus) order.paymentStatus = paymentStatus;
+    if (status && status !== order.status) {
+      order.status = status;
+      order.statusHistory.push({ status, note: 'Updated via Edit Order' });
+    }
+    if (storePickup !== undefined) order.storePickup = storePickup;
+    if (notes !== undefined) order.notes = notes;
+
+    await order.save();
+    res.json({ success: true, order });
+  } catch (err) {
+    console.error('Edit order error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Dashboard stats (MUST be before /admin/:id)
 router.get('/admin/stats/dashboard', protect, adminOnly, async (req, res) => {
   try {
@@ -637,6 +713,61 @@ router.patch('/admin/:id/tracking', protect, adminOnly, async (req, res) => {
     notifyOrderTrackingUpdate(order).catch(err => console.error('Email Notification error:', err));
 
     res.json({ success: true, order });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Full Edit Order by Admin
+router.put('/admin/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const { shippingAddress, isStorePickup, items, subtotal, shippingCost, packagingFee, total } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+    if (shippingAddress) {
+      order.shippingAddress = {
+        name: shippingAddress.name || order.shippingAddress?.name || '',
+        phone: shippingAddress.phone || order.shippingAddress?.phone || '',
+        email: shippingAddress.email !== undefined ? shippingAddress.email : order.shippingAddress?.email || '',
+        street: shippingAddress.street || order.shippingAddress?.street || '',
+        city: shippingAddress.city || order.shippingAddress?.city || '',
+        state: shippingAddress.state || order.shippingAddress?.state || '',
+        pincode: shippingAddress.pincode || order.shippingAddress?.pincode || ''
+      };
+    }
+
+    if (isStorePickup !== undefined) {
+      order.isStorePickup = !!isStorePickup;
+    }
+
+    if (Array.isArray(items) && items.length > 0) {
+      order.items = items.map(item => ({
+        product: item.product || item.productId || undefined,
+        variationId: item.variationId || '',
+        color: item.color || '',
+        size: item.size || '',
+        sku: item.sku || '',
+        name: item.name || 'Product',
+        image: item.image || '',
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
+        isCustom: !!item.isCustom
+      }));
+    }
+
+    if (subtotal !== undefined) order.subtotal = Number(subtotal);
+    if (shippingCost !== undefined) order.shippingCost = Number(shippingCost);
+    if (packagingFee !== undefined) order.packagingFee = Number(packagingFee);
+    if (total !== undefined) order.total = Number(total);
+
+    order.statusHistory.push({
+      status: order.status,
+      note: 'Order details updated by admin'
+    });
+
+    await order.save();
+    res.json({ success: true, message: 'Order updated successfully', order });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

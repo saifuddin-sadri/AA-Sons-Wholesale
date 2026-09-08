@@ -110,6 +110,7 @@ const API = (() => {
     adminUpdateStatus:   (id, b) => req('PATCH', `/orders/admin/${id}/status`, b),
     adminUpdateTracking: (id, b) => req('PATCH', `/orders/admin/${id}/tracking`, b),
     adminCreateManualOrder: (body) => req('POST', '/orders/admin/manual-order', body),
+    adminUpdateOrder:    (id, b) => req('PUT',  `/orders/admin/${id}`, b),
     dashboardStats:  (filter) => req('GET',  `/orders/admin/stats/dashboard?dateFilter=${filter || 'all'}`),
 
     // Upload
