@@ -7479,20 +7479,30 @@ ul {
   }
 
   .product-card-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     gap: 4px;
     padding-top: 6px;
+    width: 100%;
   }
 
   .btn-view-details {
-    padding: 5px 6px;
-    font-size: 0.65rem;
+    padding: 6px 8px;
+    font-size: 0.7rem;
     border-radius: 6px;
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
   }
 
   .product-card-actions .btn-add-cart {
-    padding: 5px 6px;
-    font-size: 0.65rem;
+    padding: 6px 8px;
+    font-size: 0.7rem;
     border-radius: 6px;
+    flex: 1.5;
+    justify-content: center;
+    white-space: nowrap;
   }
 }
 
