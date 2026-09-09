@@ -1397,22 +1397,39 @@ function initBestSellersCarousel(grid, prevBtn, nextBtn) {
   if (!grid || !prevBtn || !nextBtn) return;
 
   const scrollSide = (direction) => {
-    const cardWidth = grid.querySelector('.bs-card')?.offsetWidth || 220;
-    const scrollAmount = cardWidth * 2 + 24; // 2 cards + gap
-    grid.scrollBy({ left: direction === 'next' ? scrollAmount : -scrollAmount, behavior: 'smooth' });
+    const cardWidth = grid.querySelector('.bs-card')?.offsetWidth || 170;
+    const scrollAmount = (cardWidth + 16) * 2; // scroll 2 cards at a time
+    const targetLeft = direction === 'next' 
+      ? grid.scrollLeft + scrollAmount 
+      : grid.scrollLeft - scrollAmount;
+      
+    grid.scrollTo({ left: targetLeft, behavior: 'smooth' });
   };
 
-  prevBtn.onclick = () => scrollSide('prev');
-  nextBtn.onclick = () => scrollSide('next');
+  prevBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    scrollSide('prev');
+  };
+
+  nextBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    scrollSide('next');
+  };
 
   const toggleButtons = () => {
-    prevBtn.style.opacity = grid.scrollLeft <= 5 ? '0.3' : '1';
-    prevBtn.style.pointerEvents = grid.scrollLeft <= 5 ? 'none' : 'auto';
-    nextBtn.style.opacity = grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 5 ? '0.3' : '1';
-    nextBtn.style.pointerEvents = grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 5 ? 'none' : 'auto';
+    const isAtStart = grid.scrollLeft <= 5;
+    const isAtEnd = grid.scrollLeft + grid.clientWidth >= grid.scrollWidth - 10;
+    
+    prevBtn.style.opacity = isAtStart ? '0.35' : '1';
+    prevBtn.style.cursor = isAtStart ? 'default' : 'pointer';
+    
+    nextBtn.style.opacity = isAtEnd ? '0.35' : '1';
+    nextBtn.style.cursor = isAtEnd ? 'default' : 'pointer';
   };
 
-  grid.addEventListener('scroll', toggleButtons);
-  window.addEventListener('resize', toggleButtons);
+  grid.addEventListener('scroll', toggleButtons, { passive: true });
+  window.addEventListener('resize', toggleButtons, { passive: true });
   setTimeout(toggleButtons, 300);
 }
