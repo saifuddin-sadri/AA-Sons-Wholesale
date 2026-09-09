@@ -493,23 +493,41 @@
         <div class="auth-panel active" id="panelLogin">
           <div class="approved-banner" id="approvedBanner">
             <span class="icon">✅</span>
-            <span class="text">Your login has been approved! Enter your credentials to access the portal.</span>
+            <span class="text">Your login request is approved! Enter your registered mobile number to log in.</span>
           </div>
 
           <div class="auth-message" id="loginMessage"></div>
 
+          <!-- Regular User Mobile Login Form -->
           <form id="loginForm">
-            <div class="form-group">
-              <label class="form-label">Email Address</label>
-              <input type="email" class="form-input" id="loginEmail" placeholder="your@email.com" required autocomplete="email" />
+            <div id="userLoginFields">
+              <div class="form-group">
+                <label class="form-label">Registered Mobile Number *</label>
+                <input type="tel" class="form-input" id="loginMobile" placeholder="e.g. 9876543210" required autocomplete="tel" />
+              </div>
             </div>
-            <div class="form-group">
-              <label class="form-label">Password</label>
-              <input type="password" class="form-input" id="loginPassword" placeholder="••••••••" required autocomplete="current-password" />
+
+            <!-- Hidden Admin Email/Pass Login Fields -->
+            <div id="adminLoginFields" style="display: none;">
+              <div class="form-group">
+                <label class="form-label">Admin Email Address *</label>
+                <input type="email" class="form-input" id="loginAdminEmail" placeholder="admin@example.com" autocomplete="email" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Admin Password *</label>
+                <input type="password" class="form-input" id="loginAdminPassword" placeholder="••••••••" autocomplete="current-password" />
+              </div>
             </div>
+
             <button type="submit" class="btn-auth btn-auth-primary" id="loginBtn">
               <span id="loginBtnText">Send Login Request</span>
             </button>
+
+            <div style="text-align: center; margin-top: 14px;">
+              <button type="button" id="toggleAdminBtn" style="background: none; border: none; font-size: 0.8rem; color: var(--teal); cursor: pointer; text-decoration: underline; font-family: var(--font-body);">
+                🔐 Admin Login (Email & Password)
+              </button>
+            </div>
           </form>
         </div>
 
@@ -517,7 +535,7 @@
         <div class="success-screen" id="loginSuccess">
           <div class="success-icon">📨</div>
           <h3>Login Request Sent!</h3>
-          <p>Your login request has been sent to the admin. You will receive an email with a login link once approved.</p>
+          <p>Your login request has been sent to the admin. You will receive an email once approved.</p>
           <button class="btn-auth btn-auth-primary" onclick="resetLoginForm()">
             ← Back to Login
           </button>
@@ -537,21 +555,12 @@
               <input type="email" class="form-input" id="regEmail" placeholder="your@email.com" required autocomplete="email" />
             </div>
             <div class="form-group">
-              <label class="form-label">Password *</label>
-              <input type="password" class="form-input" id="regPassword" placeholder="Min. 6 characters" required minlength="6" />
-              <div class="password-strength" id="passwordStrength">
-                <div class="bar"></div>
-                <div class="bar"></div>
-                <div class="bar"></div>
-              </div>
-            </div>
-            <div class="form-group">
               <label class="form-label">Business Name *</label>
               <input type="text" class="form-input" id="regBusinessName" placeholder="e.g. Sharma Textiles" required />
             </div>
             <div class="form-group">
-              <label class="form-label">Contact Number *</label>
-              <input type="tel" class="form-input" id="regContactNumber" placeholder="+91 XXXXX XXXXX" required />
+              <label class="form-label">Contact / Mobile Number *</label>
+              <input type="tel" class="form-input" id="regContactNumber" placeholder="e.g. 9876543210" required />
             </div>
 
             <!-- Address Section -->

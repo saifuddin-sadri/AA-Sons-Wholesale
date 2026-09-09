@@ -18,32 +18,31 @@ const signAdminToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expire
 // ─── PUBLIC: Submit Registration Request ──────────────
 router.post('/register-request', async (req, res) => {
   try {
-    const { name, email, password, businessName, contactNumber, businessCard, address } = req.body;
+    const { name, email, businessName, contactNumber, businessCard, address } = req.body;
 
-    if (!name || !email || !password || !businessName || !contactNumber) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+    if (!name || !email || !businessName || !contactNumber) {
+      return res.status(400).json({ success: false, message: 'Name, email, business name, and contact number are required' });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    // Check if user already exists by email or contactNumber
+    const existingUser = await User.findOne({
+      $or: [{ email: email.toLowerCase() }, { contactNumber }, { phone: contactNumber }]
+    });
     if (existingUser) {
-      return res.status(400).json({ success: false, message: 'You are already registered. Please send a login request.' });
+      return res.status(400).json({ success: false, message: 'An account with this email or mobile number already exists. Please send a login request.' });
     }
 
     // Check if there's already a pending registration request
-    const existingRequest = await RegistrationRequest.findOne({ email, status: 'pending' });
+    const existingRequest = await RegistrationRequest.findOne({
+      status: 'pending',
+      $or: [{ email: email.toLowerCase() }, { contactNumber }]
+    });
     if (existingRequest) {
-      return res.status(400).json({ success: false, message: 'A registration request for this email is already pending' });
+      return res.status(400).json({ success: false, message: 'A registration request for this email or mobile number is already pending' });
     }
 
-    // Hash password before storing
-    const hashedPassword = await bcrypt.hash(password, 12);
-
     const request = await RegistrationRequest.create({
-      name, email, password: hashedPassword, businessName, contactNumber,
+      name, email: email.toLowerCase(), password: '', businessName, contactNumber,
       businessCard: businessCard || '',
       address: address || {}
     });
@@ -67,21 +66,17 @@ router.post('/register-request', async (req, res) => {
 // ─── PUBLIC: Submit Login Request ──────────────────────
 router.post('/login-request', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password are required' });
-    }
+    const { contactNumber, email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'You are not registered. Please register first.' });
-    }
-
-    // Admin users bypass the login request system
-    if (user.role === 'admin') {
+    // Admin login path using email and password
+    if (email && password) {
+      const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user || user.role !== 'admin') {
+        return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+      }
       const isMatch = await user.comparePassword(password);
       if (!isMatch) {
-        return res.status(401).json({ success: false, message: 'You entered the wrong password' });
+        return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
       }
       const token = signAdminToken(user._id);
       return res.json({
@@ -92,13 +87,25 @@ router.post('/login-request', async (req, res) => {
       });
     }
 
-    if (!user.isApproved) {
-      return res.status(403).json({ success: false, message: 'Your account has not been approved yet. Please wait for admin approval.' });
+    if (!contactNumber) {
+      return res.status(400).json({ success: false, message: 'Mobile number is required' });
     }
 
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'You entered the wrong password' });
+    const cleanContact = contactNumber.trim();
+    const user = await User.findOne({
+      $or: [{ contactNumber: cleanContact }, { phone: cleanContact }]
+    });
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Mobile number is not registered. Please register first.' });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: 'Admin accounts must use Admin Login with email and password.' });
+    }
+
+    if (!user.isApproved) {
+      return res.status(403).json({ success: false, message: 'Your account has not been approved yet. Please wait for admin approval.' });
     }
 
     // Check if user has an approved login request
@@ -108,7 +115,6 @@ router.post('/login-request', async (req, res) => {
     }).sort({ approvedAt: -1 });
 
     if (approvedLogin) {
-      // Check if this approved request is stale (approved before the user's current session expired or older than 3 hours)
       const approvedAt = approvedLogin.approvedAt || approvedLogin.createdAt;
       const isMoreThan3HoursOld = approvedAt && (new Date() - new Date(approvedAt) > 3 * 60 * 60 * 1000);
 
@@ -119,12 +125,10 @@ router.post('/login-request', async (req, res) => {
       const isValid = (neverUsed || sessionActive || approvedAfterSessionExpiry) && !isMoreThan3HoursOld;
 
       if (isValid) {
-        // Session is still valid or user has never logged in yet or request was approved after session expiry — allow direct login
         const sessionExpiry = new Date(Date.now() + 3 * 60 * 60 * 1000);
         user.sessionExpiry = sessionExpiry;
         await user.save();
 
-        // Mark the login request as used
         approvedLogin.status = 'used';
         await approvedLogin.save();
 
@@ -137,14 +141,12 @@ router.post('/login-request', async (req, res) => {
           sessionExpiry: sessionExpiry.toISOString(),
           user: {
             id: user._id, name: user.name, email: user.email,
-            role: user.role, businessName: user.businessName
+            role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
           }
         });
       } else {
-        // Session has expired or request is older than 3 hours — mark as expired
         approvedLogin.status = 'expired';
         await approvedLogin.save();
-        // Fall through to create a new pending login request below
       }
     }
 
@@ -160,20 +162,20 @@ router.post('/login-request', async (req, res) => {
       name: user.name,
       email: user.email,
       businessName: user.businessName,
-      contactNumber: user.contactNumber,
+      contactNumber: user.contactNumber || cleanContact,
       businessCard: user.businessCard
     });
 
     // Create admin notification
     await createAdminNotification({
       title: 'New Login Request',
-      message: `${user.name} (${user.businessName}) is requesting login access.`,
+      message: `${user.name} (${user.businessName || cleanContact}) is requesting login access.`,
       type: 'login',
       link: 'login-requests',
       metadata: { requestId: loginReq._id }
     });
 
-    res.json({ success: true, message: 'Login request sent! You will receive an email with a login link once approved.' });
+    res.json({ success: true, message: 'Login request sent! You will receive an email once approved by admin.' });
   } catch (err) {
     console.error('Login request error:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -181,35 +183,49 @@ router.post('/login-request', async (req, res) => {
 });
 
 // ─── PUBLIC: Login with approved credentials ──────────
-// After admin approves and user clicks email link, they land on login page
-// and enter credentials again. This endpoint actually logs them in with a 3hr session.
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password required' });
-    }
+    const { contactNumber, email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'You are not registered. Please register first.' });
-    }
-    
-    if (!(await user.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: 'You entered the wrong password' });
-    }
-
-    // Admin bypasses session timer
-    if (user.role === 'admin') {
+    // Admin login handling
+    if (email && password) {
+      const user = await User.findOne({ email: email.toLowerCase() });
+      if (!user) {
+        return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+      }
+      if (user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Email and password login is reserved for admins. Please log in with your mobile number.' });
+      }
+      if (!(await user.comparePassword(password))) {
+        return res.status(401).json({ success: false, message: 'Invalid admin credentials' });
+      }
       const token = signAdminToken(user._id);
       return res.json({
         success: true,
+        isAdmin: true,
         token,
         user: { id: user._id, name: user.name, email: user.email, role: user.role }
       });
     }
 
-    // Check if user has an approved login request
+    if (!contactNumber) {
+      return res.status(400).json({ success: false, message: 'Mobile number is required' });
+    }
+
+    const cleanContact = contactNumber.trim();
+    const user = await User.findOne({
+      $or: [{ contactNumber: cleanContact }, { phone: cleanContact }]
+    });
+
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Mobile number is not registered. Please register first.' });
+    }
+
+    if (user.role === 'admin') {
+      return res.status(400).json({ success: false, message: 'Admin accounts must log in with email and password.' });
+    }
+
+    // Check for approved login request
     const approvedLogin = await LoginRequest.findOne({
       user: user._id,
       status: 'approved'
@@ -222,7 +238,7 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Check if the approved login request is older than 3 hours
+    // Check if older than 3 hours
     const approvedAt = approvedLogin.approvedAt || approvedLogin.createdAt;
     if (approvedAt && (new Date() - new Date(approvedAt) > 3 * 60 * 60 * 1000)) {
       approvedLogin.status = 'expired';
@@ -233,12 +249,10 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Set session expiry to 3 hours from now
     const sessionExpiry = new Date(Date.now() + 3 * 60 * 60 * 1000);
     user.sessionExpiry = sessionExpiry;
     await user.save();
 
-    // Mark the login request as used (change status so it can't be reused)
     approvedLogin.status = 'used';
     await approvedLogin.save();
 
@@ -250,7 +264,7 @@ router.post('/login', async (req, res) => {
       sessionExpiry: sessionExpiry.toISOString(),
       user: {
         id: user._id, name: user.name, email: user.email,
-        role: user.role, businessName: user.businessName
+        role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
       }
     });
   } catch (err) {
@@ -428,7 +442,7 @@ router.patch('/admin/login-requests/:id/approve', protect, adminOnly, async (req
 
     // Send email with link to login page
     const siteUrl = `${req.protocol}://${req.get('host')}`;
-    const loginLink = `${siteUrl}/auth?approved=true&email=${encodeURIComponent(loginReq.email)}`;
+    const loginLink = `${siteUrl}/auth?approved=true&mobile=${encodeURIComponent(loginReq.contactNumber || '')}`;
 
     const html = `
       <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
@@ -440,7 +454,7 @@ router.patch('/admin/login-requests/:id/approve', protect, adminOnly, async (req
           <h2 style="color: #1B5E4B; margin-top: 0;">Login Request Approved! 🔓</h2>
           <p style="color: #555;">Dear <strong>${loginReq.name}</strong>,</p>
           <p style="color: #555;">Your login request has been approved. You now have access to the A.A & Sons wholesale portal.</p>
-          <p style="color: #555;">Click the button below to go to the login page, enter your email and password, and you will be granted <strong>3 hours</strong> of access.</p>
+          <p style="color: #555;">Click the button below to go to the login page, enter your registered Mobile Number, and you will be granted <strong>3 hours</strong> of access.</p>
           <div style="text-align: center; margin: 30px 0;">
             <a href="${loginLink}" style="background: #1B5E4B; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Login Now</a>
           </div>

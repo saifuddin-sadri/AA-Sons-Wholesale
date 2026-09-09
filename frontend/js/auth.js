@@ -5,15 +5,48 @@
   // ─── Check URL params for approved login ──────────
   const params = new URLSearchParams(window.location.search);
   const isApproved = params.get('approved') === 'true';
-  const prefilledEmail = params.get('email') || '';
+  const prefilledMobile = params.get('mobile') || params.get('contactNumber') || params.get('email') || '';
 
-  // ─── Tab Switching ────────────────────────────────
+  // ─── Tab Switching & Admin Toggle ─────────────────
   const tabs = document.querySelectorAll('.auth-tab');
   const loginPanel = document.getElementById('panelLogin');
   const registerPanel = document.getElementById('panelRegister');
   const loginSuccess = document.getElementById('loginSuccess');
   const registerSuccess = document.getElementById('registerSuccess');
   const approvedBanner = document.getElementById('approvedBanner');
+  const userLoginFields = document.getElementById('userLoginFields');
+  const adminLoginFields = document.getElementById('adminLoginFields');
+  const toggleAdminBtn = document.getElementById('toggleAdminBtn');
+
+  let isAdminMode = false;
+
+  function setAdminMode(enabled) {
+    isAdminMode = enabled;
+    if (isAdminMode) {
+      userLoginFields.style.display = 'none';
+      adminLoginFields.style.display = 'block';
+      toggleAdminBtn.textContent = '← Back to Mobile Login';
+      document.getElementById('loginBtnText').textContent = 'Admin Login';
+      document.getElementById('loginMobile').removeAttribute('required');
+      document.getElementById('loginAdminEmail').setAttribute('required', 'true');
+      document.getElementById('loginAdminPassword').setAttribute('required', 'true');
+    } else {
+      adminLoginFields.style.display = 'none';
+      userLoginFields.style.display = 'block';
+      toggleAdminBtn.textContent = '🔐 Admin Login (Email & Password)';
+      document.getElementById('loginBtnText').textContent = window.__loginApproved ? 'Login to Portal' : 'Send Login Request';
+      document.getElementById('loginAdminEmail').removeAttribute('required');
+      document.getElementById('loginAdminPassword').removeAttribute('required');
+      document.getElementById('loginMobile').setAttribute('required', 'true');
+    }
+  }
+
+  if (toggleAdminBtn) {
+    toggleAdminBtn.addEventListener('click', () => {
+      setAdminMode(!isAdminMode);
+      hideMessage('loginMessage');
+    });
+  }
 
   window.switchTab = function(tab) {
     tabs.forEach(t => t.classList.remove('active'));
@@ -39,20 +72,22 @@
     tab.addEventListener('click', () => switchTab(tab.dataset.tab));
   });
 
-  // If user came from approved login email, show banner and prefill email
+  // If user came from approved login notification, show banner and prefill mobile
   if (isApproved) {
     switchTab('login');
     approvedBanner.classList.add('visible');
-    document.getElementById('loginEmail').value = decodeURIComponent(prefilledEmail);
-    // Change button text to "Login" since they already have approval
+    const loginMobileInput = document.getElementById('loginMobile');
+    if (loginMobileInput) {
+      loginMobileInput.value = decodeURIComponent(prefilledMobile);
+    }
     document.getElementById('loginBtnText').textContent = 'Login to Portal';
-    // Set a flag so we know to do direct login
     window.__loginApproved = true;
   }
 
   // ─── Message Helpers ──────────────────────────────
   function showMessage(id, text, type) {
     const el = document.getElementById(id);
+    if (!el) return;
     el.textContent = text;
     el.className = `auth-message ${type}`;
     el.style.display = 'block';
@@ -60,26 +95,9 @@
 
   function hideMessage(id) {
     const el = document.getElementById(id);
+    if (!el) return;
     el.className = 'auth-message';
     el.style.display = 'none';
-  }
-
-  // ─── Password Strength ───────────────────────────
-  const regPassword = document.getElementById('regPassword');
-  const strengthEl = document.getElementById('passwordStrength');
-
-  if (regPassword) {
-    regPassword.addEventListener('input', () => {
-      const val = regPassword.value;
-      strengthEl.className = 'password-strength';
-      if (val.length >= 8 && /[A-Z]/.test(val) && /[0-9]/.test(val)) {
-        strengthEl.classList.add('strong');
-      } else if (val.length >= 6) {
-        strengthEl.classList.add('medium');
-      } else if (val.length > 0) {
-        strengthEl.classList.add('weak');
-      }
-    });
   }
 
   // ─── Business Card Upload ────────────────────────
@@ -87,7 +105,6 @@
   const uploadArea = document.getElementById('uploadArea');
   const fileName = document.getElementById('fileName');
   const uploadPreview = document.getElementById('uploadPreview');
-  let businessCardUrl = '';
 
   if (fileInput) {
     fileInput.addEventListener('change', (e) => {
@@ -103,7 +120,6 @@
       fileName.textContent = file.name;
       fileName.style.display = 'block';
 
-      // Preview
       const reader = new FileReader();
       reader.onload = (ev) => {
         uploadPreview.src = ev.target.result;
@@ -115,13 +131,12 @@
 
   // ─── Upload business card to Cloudinary ──────────
   async function uploadBusinessCard() {
-    const file = fileInput.files[0];
+    const file = fileInput ? fileInput.files[0] : null;
     if (!file) return '';
 
     try {
       const fd = new FormData();
       fd.append('image', file);
-      // Use the public business-card endpoint (no auth required)
       const hostname = window.location.hostname;
       const isDev = (hostname === 'localhost' || hostname === '127.0.0.1') && window.location.port !== '5001';
       const base = isDev ? 'http://localhost:5001/api' : '/api';
@@ -145,11 +160,40 @@
 
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
 
-    if (!email || !password) {
-      showMessage('loginMessage', 'Please fill in all fields', 'error');
+    if (isAdminMode) {
+      const email = document.getElementById('loginAdminEmail').value.trim();
+      const password = document.getElementById('loginAdminPassword').value;
+
+      if (!email || !password) {
+        showMessage('loginMessage', 'Please enter admin email and password', 'error');
+        return;
+      }
+
+      loginBtn.disabled = true;
+      loginBtnText.innerHTML = '<span class="spinner"></span> Logging in...';
+      hideMessage('loginMessage');
+
+      try {
+        const data = await API.login({ email, password });
+        if (data.success && data.isAdmin) {
+          saveAuth(data.token, data.user);
+          window.location.href = '/admin';
+          return;
+        }
+      } catch (err) {
+        showMessage('loginMessage', err.message, 'error');
+      } finally {
+        loginBtn.disabled = false;
+        loginBtnText.textContent = 'Admin Login';
+      }
+      return;
+    }
+
+    // Regular Mobile Number Login Flow
+    const mobile = document.getElementById('loginMobile').value.trim();
+    if (!mobile) {
+      showMessage('loginMessage', 'Please enter your registered mobile number', 'error');
       return;
     }
 
@@ -157,29 +201,25 @@
     loginBtnText.innerHTML = '<span class="spinner"></span> Processing...';
     hideMessage('loginMessage');
 
+    // Clear any previous session state when attempting a new login
+    API.logout();
+
     try {
       if (window.__loginApproved) {
-        // Direct login — user came from approved email link
-        const data = await API.login({ email, password });
+        // Direct login if request was approved via link
+        const data = await API.login({ contactNumber: mobile });
         if (data.success) {
           saveAuth(data.token, data.user);
           if (data.sessionExpiry) {
             localStorage.setItem('aa_session_expiry', data.sessionExpiry);
           }
-          // Redirect to main site
           window.location.href = '/';
+          return;
         }
       } else {
         // Send login request
-        const data = await API.loginRequest({ email, password });
+        const data = await API.loginRequest({ contactNumber: mobile });
         if (data.success) {
-          // Check if admin (bypass request system)
-          if (data.isAdmin) {
-            saveAuth(data.token, data.user);
-            window.location.href = '/admin';
-            return;
-          }
-          // Direct login if the request was already approved
           if (data.directLogin) {
             saveAuth(data.token, data.user);
             if (data.sessionExpiry) {
@@ -217,7 +257,6 @@
 
     const name = document.getElementById('regName').value.trim();
     const email = document.getElementById('regEmail').value.trim();
-    const password = document.getElementById('regPassword').value;
     const businessName = document.getElementById('regBusinessName').value.trim();
     const contactNumber = document.getElementById('regContactNumber').value.trim();
     const street = document.getElementById('regStreet').value.trim();
@@ -225,13 +264,8 @@
     const state = document.getElementById('regState').value.trim();
     const pincode = document.getElementById('regPincode').value.trim();
 
-    if (!name || !email || !password || !businessName || !contactNumber || !street || !city || !state || !pincode) {
+    if (!name || !email || !businessName || !contactNumber || !street || !city || !state || !pincode) {
       showMessage('registerMessage', 'Please fill in all required fields', 'error');
-      return;
-    }
-
-    if (password.length < 6) {
-      showMessage('registerMessage', 'Password must be at least 6 characters', 'error');
       return;
     }
 
@@ -245,15 +279,14 @@
     hideMessage('registerMessage');
 
     try {
-      // Upload business card if provided
       let cardUrl = '';
-      if (fileInput.files[0]) {
+      if (fileInput && fileInput.files[0]) {
         registerBtnText.innerHTML = '<span class="spinner"></span> Uploading card...';
         cardUrl = await uploadBusinessCard();
       }
 
       const data = await API.registerRequest({
-        name, email, password, businessName, contactNumber,
+        name, email, businessName, contactNumber,
         businessCard: cardUrl,
         address: { street, city, state, pincode }
       });
@@ -270,30 +303,30 @@
     }
   });
 
-  // ─── Check if already logged in ──────────────────
+  // ─── Check existing session ──────────────────────
   function checkExistingSession() {
+    // If coming from an approved login link, don't show active session notice
+    if (isApproved) return;
+
     const token = API.getToken();
     const user = API.getUser();
     if (!token || !user) return;
 
-    // Admin goes straight to admin panel
-    if (user.role === 'admin') {
-      window.location.href = '/admin';
-      return;
-    }
-
     // Check session expiry
     const expiry = localStorage.getItem('aa_session_expiry');
     if (expiry && new Date() < new Date(expiry)) {
-      // Session is still valid, redirect to home
-      window.location.href = '/';
+      // If user came to /auth, show active session notice without auto-redirecting
+      if (approvedBanner && user.name) {
+        approvedBanner.className = 'approved-banner visible';
+        approvedBanner.style.background = 'rgba(27,94,75,0.08)';
+        approvedBanner.style.borderColor = 'rgba(27,94,75,0.2)';
+        approvedBanner.innerHTML = `<span class="icon">👤</span><span class="text" style="color: var(--teal);">Currently logged in as <strong>${user.name}</strong> (${user.contactNumber || user.email || ''}). <a href="/" style="color: var(--teal); font-weight:700; text-decoration: underline; margin-left: 6px;">Go to Portal →</a></span>`;
+      }
       return;
     }
 
     // Session expired — clear auth
-    localStorage.removeItem('aa_token');
-    localStorage.removeItem('aa_user');
-    localStorage.removeItem('aa_session_expiry');
+    API.logout();
   }
 
   checkExistingSession();
