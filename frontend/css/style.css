@@ -8441,3 +8441,50 @@ ul {
   .edit-order-footer { padding: 14px 18px; }
   .edit-order-products-header { flex-direction: column; align-items: flex-start; }
 }
+
+/* ══ Premium Price Search Pill Button ══ */
+.btn-price-search {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: linear-gradient(135deg, rgba(27, 94, 75, 0.08), rgba(200, 135, 58, 0.12));
+  color: var(--teal, #1B5E4B);
+  border: 1px solid rgba(27, 94, 75, 0.25);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  font-family: var(--font-body, 'Poppins', sans-serif);
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.btn-price-search:hover {
+  background: linear-gradient(135deg, #1B5E4B, #144738);
+  color: #ffffff;
+  border-color: #1B5E4B;
+  box-shadow: 0 4px 12px rgba(27, 94, 75, 0.3);
+  transform: scale(1.04);
+}
+
+.btn-price-search:active {
+  transform: scale(0.97);
+}
+
+.search-wrap .btn-price-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.search-wrap .btn-price-search:hover {
+  transform: translateY(-50%) scale(1.04);
+}
+
+.search-wrap .btn-price-search:active {
+  transform: translateY(-50%) scale(0.97);
+}

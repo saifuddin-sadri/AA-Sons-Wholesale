@@ -156,7 +156,6 @@ function showPage(page) {
     'bulk-enquiries': 'Bulk Enquiries Management',
     'festive':     'Manage Festive Season',
     'manual-order': 'Create Manual Order',
-    'registration-requests': 'Registration Requests',
     'login-requests': 'Login Requests',
     'users': 'Authorised Users'
   };
@@ -172,7 +171,6 @@ function showPage(page) {
   if (page === 'bulk-enquiries') loadBulkEnquiries();
   if (page === 'festive') loadFestiveSettings();
   if (page === 'manual-order') initManualOrderPage();
-  if (page === 'registration-requests') loadRegistrationRequests();
   if (page === 'login-requests') loadLoginRequests();
   if (page === 'users') loadUsers();
 }
@@ -1117,8 +1115,14 @@ function confirmDeleteProduct(id, name) {
 }
 
 /* ── Modal helpers ───────────────────────────────────── */
+function openModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.add('open');
+}
+
 function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
 }
 
 document.querySelectorAll('.modal-overlay').forEach(m => {
@@ -2083,124 +2087,8 @@ function addCustomProductToOrder() {
   showToast('Custom product added to order', 'success');
 }
 
-/* ── Registration & Login Requests ──────────────────── */
-window.loadRegistrationRequests = async function() {
-  const tbody = document.getElementById('regRequestsTableBody');
-  const badge = document.getElementById('badgeRegRequests');
-  const filter = document.getElementById('regStatusFilter')?.value || 'pending';
-
-  try {
-    const data = await API.adminGetRegistrationRequests();
-    if (!data.success) throw new Error(data.message);
-
-    // Filter requests
-    let requests = data.requests || [];
-    if (filter !== 'all') {
-      requests = requests.filter(r => r.status === filter);
-    }
-
-    if (badge) badge.textContent = requests.length;
-
-    if (requests.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">No ${filter} registration requests found.</td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = requests.map(r => `
-      <tr>
-        <td>${new Date(r.createdAt).toLocaleDateString('en-IN')}</td>
-        <td><strong>${r.name}</strong></td>
-        <td>${r.email}</td>
-        <td>${r.businessName}</td>
-        <td>${r.contactNumber}</td>
-        <td><span class="badge badge-${r.status}">${r.status}</span></td>
-        <td>
-          <button class="btn-icon view" onclick="viewRegistrationRequest('${r._id}')" title="View details">👁</button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    console.error(err);
-    showToast('Failed to load registration requests', 'error');
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:#C62828">Error loading requests: ${err.message}</td></tr>`;
-  }
-};
-
-window.viewRegistrationRequest = async function(id) {
-  try {
-    const data = await API.adminGetRegistrationRequest(id);
-    if (!data.success) throw new Error(data.message);
-    const r = data.request;
-
-    const modalBody = document.getElementById('regRequestModalBody');
-    modalBody.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-          <div>
-            <label class="form-label" style="font-weight:600">Full Name</label>
-            <p style="padding:10px;background:#f9f9f9;border-radius:6px;margin:0">${r.name}</p>
-          </div>
-          <div>
-            <label class="form-label" style="font-weight:600">Email Address</label>
-            <p style="padding:10px;background:#f9f9f9;border-radius:6px;margin:0">${r.email}</p>
-          </div>
-          <div>
-            <label class="form-label" style="font-weight:600">Business Name</label>
-            <p style="padding:10px;background:#f9f9f9;border-radius:6px;margin:0">${r.businessName}</p>
-          </div>
-          <div>
-            <label class="form-label" style="font-weight:600">Contact Number</label>
-            <p style="padding:10px;background:#f9f9f9;border-radius:6px;margin:0">${r.contactNumber}</p>
-          </div>
-        </div>
-        <div>
-          <label class="form-label" style="font-weight:600">Business Card</label>
-          <div style="margin-top:8px;text-align:center;background:#fafafa;padding:16px;border-radius:8px;border:1px solid #eee">
-            ${r.businessCard ? `<img src="${r.businessCard}" alt="Business Card" style="max-width:100%;max-height:250px;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,0.1);" />` : '<p style="color:#999;margin:0">No business card uploaded</p>'}
-          </div>
-        </div>
-        ${r.status === 'pending' ? `
-          <div style="display:flex;gap:12px;margin-top:20px;">
-            <button onclick="approveRegistration('${r._id}')" class="btn-admin-primary" style="flex:1;padding:12px">Accept & Approve User</button>
-            <button onclick="rejectRegistration('${r._id}')" class="btn-admin-secondary" style="flex:1;background:#C62828;color:white;border:none;">Reject Request</button>
-          </div>
-        ` : `
-          <div style="margin-top:20px;padding:12px;text-align:center;background:#eef7f4;border-radius:6px;color:#1B5E4B;font-weight:600;">
-            Status: ${r.status.toUpperCase()}
-          </div>
-        `}
-      </div>
-    `;
-
-    document.getElementById('regRequestModal').classList.add('open');
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-};
-
-window.approveRegistration = async function(id) {
-  if (!confirm('Are you sure you want to approve this registration?')) return;
-  try {
-    const data = await API.adminApproveRegistration(id);
-    showToast(data.message || 'Registration request approved successfully!', 'success');
-    closeModal('regRequestModal');
-    loadRegistrationRequests();
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-};
-
-window.rejectRegistration = async function(id) {
-  if (!confirm('Are you sure you want to reject this registration?')) return;
-  try {
-    const data = await API.adminRejectRegistration(id);
-    showToast(data.message || 'Registration request rejected.', 'success');
-    closeModal('regRequestModal');
-    loadRegistrationRequests();
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-};
+/* ── Login Requests ─────────────────────────────── */
+// Registration requests removed - accounts are now created directly
 
 window.loadLoginRequests = async function() {
   const tbody = document.getElementById('loginRequestsTableBody');
@@ -2231,9 +2119,13 @@ window.loadLoginRequests = async function() {
         <td>${r.email || (r.user?.email || '—')}</td>
         <td>${r.businessName || (r.user?.businessName || '—')}</td>
         <td>${r.contactNumber || (r.user?.contactNumber || '—')}</td>
-        <td><span class="badge badge-${r.status}">${r.status}</span></td>
-        <td>
+        <td><span class="badge badge-${r.status}">${r.status}${r.duration && r.status === 'approved' ? ` (${r.duration === 'always' ? '∞' : '3h'})` : ''}</span></td>
+        <td style="white-space:nowrap;">
           <button class="btn-icon view" onclick="viewLoginRequest('${r._id}')" title="View details">👁</button>
+          ${r.status === 'pending' ? `
+            <button class="btn-icon" onclick="approveLogin('${r._id}', '3h')" title="Approve 3 Hours" style="background:#E8F5E9;color:#2E7D32;font-size:0.7rem;padding:4px 6px;border-radius:4px;margin-left:4px;">⏱3h</button>
+            <button class="btn-icon" onclick="approveLogin('${r._id}', 'always')" title="Approve Always" style="background:#E3F2FD;color:#1565C0;font-size:0.7rem;padding:4px 6px;border-radius:4px;margin-left:2px;">✨∞</button>
+          ` : ''}
         </td>
       </tr>
     `).join('');
@@ -2283,13 +2175,25 @@ window.viewLoginRequest = async function(id) {
           </div>
         </div>
         ${r.status === 'pending' ? `
-          <div style="display:flex;gap:12px;margin-top:20px;">
-            <button onclick="approveLogin('${r._id}')" class="btn-admin-primary" style="flex:1;padding:12px">Approve Login</button>
-            <button onclick="rejectLogin('${r._id}')" class="btn-admin-secondary" style="flex:1;background:#C62828;color:white;border:none;">Reject Request</button>
+          <div style="margin-top:20px;">
+            <label class="form-label" style="font-weight:600;margin-bottom:12px;display:block;">Select Access Duration</label>
+            <div style="display:flex;gap:12px;">
+              <button onclick="approveLogin('${r._id}', '3h')" class="btn-admin-primary" style="flex:1;padding:12px;display:flex;flex-direction:column;align-items:center;gap:4px;">
+                <span style="font-size:1.2rem;">⏱</span>
+                <span>3 Hours Access</span>
+              </button>
+              <button onclick="approveLogin('${r._id}', 'always')" style="flex:1;padding:12px;background:linear-gradient(135deg,#1B5E4B,#2A7A63);color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;font-family:inherit;font-size:.84rem;">
+                <span style="font-size:1.2rem;">✨</span>
+                <span>Always Access</span>
+              </button>
+            </div>
+            <div style="display:flex;gap:12px;margin-top:12px;">
+              <button onclick="rejectLogin('${r._id}')" class="btn-admin-secondary" style="width:100%;background:#C62828;color:white;border:none;">Reject Request</button>
+            </div>
           </div>
         ` : `
           <div style="margin-top:20px;padding:12px;text-align:center;background:#eef7f4;border-radius:6px;color:#1B5E4B;font-weight:600;">
-            Status: ${r.status.toUpperCase()}
+            Status: ${r.status.toUpperCase()}${r.duration ? ` (${r.duration === 'always' ? 'Always Access' : '3 Hours'})` : ''}
           </div>
         `}
       </div>
@@ -2301,11 +2205,12 @@ window.viewLoginRequest = async function(id) {
   }
 };
 
-window.approveLogin = async function(id) {
-  if (!confirm('Are you sure you want to approve this login request?')) return;
+window.approveLogin = async function(id, duration = '3h') {
+  const label = duration === 'always' ? 'Always Access' : '3 Hours';
+  if (!confirm(`Approve this login request for ${label}?`)) return;
   try {
-    const data = await API.adminApproveLogin(id);
-    showToast(data.message || 'Login approved and email sent to user.', 'success');
+    const data = await API.adminApproveLogin(id, duration);
+    showToast(data.message || `Login approved for ${label} and email sent to user.`, 'success');
     closeModal('loginRequestModal');
     loadLoginRequests();
   } catch (err) {
@@ -2335,13 +2240,13 @@ async function loadUsers() {
   const searchInput = document.getElementById('usrFilterInput');
   if (searchInput) searchInput.value = '';
 
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--mid)">Loading...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--mid)">Loading...</td></tr>';
   try {
     const data = await API.adminGetUsers();
     allAuthorisedUsers = data.users || [];
     renderUsersTable(allAuthorisedUsers);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:24px;color:#C62828">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#C62828">${err.message}</td></tr>`;
   }
 }
 
@@ -2361,23 +2266,112 @@ function renderUsersTable(users) {
   if (badge) badge.textContent = users.length;
 
   if (!users.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">No authorised users found.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">No authorised users found.</td></tr>';
     return;
   }
 
-  tbody.innerHTML = users.map(u => `
-    <tr>
-      <td>${new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
-      <td><strong>${u.name}</strong></td>
-      <td>${u.email}</td>
-      <td>${u.businessName || '—'}</td>
-      <td>${u.contactNumber || '—'}</td>
-      <td>
-        <button class="btn-icon delete" onclick="deleteUser('${u._id}')" title="Remove User">🗑️</button>
-      </td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = users.map(u => {
+    let accessBadge = '';
+    if (u.alwaysAccess) {
+      accessBadge = `<span style="background:#E8F5E9;color:#2E7D32;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;display:inline-block;">∞ Always</span>`;
+    } else if (u.sessionExpiry && new Date(u.sessionExpiry) > new Date()) {
+      const remainingMs = new Date(u.sessionExpiry) - new Date();
+      const remainingMins = Math.ceil(remainingMs / 60000);
+      accessBadge = `<span style="background:#E3F2FD;color:#1565C0;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;display:inline-block;" title="Expires at ${new Date(u.sessionExpiry).toLocaleTimeString('en-IN')}">⏱️ Active (${remainingMins}m left)</span>`;
+    } else {
+      accessBadge = `<span style="background:#ECEFF1;color:#546E7A;padding:4px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;display:inline-block;">🔒 No Access</span>`;
+    }
+
+    return `
+      <tr>
+        <td style="white-space:nowrap;">${new Date(u.createdAt).toLocaleDateString('en-IN')}</td>
+        <td><strong>${u.name}</strong></td>
+        <td>${u.email}</td>
+        <td>${u.businessName || '—'}</td>
+        <td style="white-space:nowrap;">${u.contactNumber || '—'}</td>
+        <td style="text-align:center;">${accessBadge}</td>
+        <td style="white-space:nowrap; text-align:center;">
+          <button onclick="openEditUserAccessModal('${u._id}')" title="Edit Access Level" style="background:#F0F4F8; color:#102A43; border:1px solid #CBD5E1; padding:5px 10px; border-radius:4px; cursor:pointer; font-weight:500; font-size:0.78rem; display:inline-flex; align-items:center; gap:4px; vertical-align:middle; line-height:1;">✏️ Access</button>
+          <button class="btn-icon delete" onclick="deleteUser('${u._id}')" title="Remove User" style="vertical-align:middle; margin-left:4px; display:inline-flex; align-items:center; justify-content:center;">🗑️</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
+
+window.openEditUserAccessModal = function(userId) {
+  const user = allAuthorisedUsers.find(u => u._id === userId);
+  if (!user) return;
+
+  const modalBody = document.getElementById('editUserAccessModalBody');
+  if (!modalBody) return;
+
+  let currentAccessText = '';
+  if (user.alwaysAccess) {
+    currentAccessText = '<span style="color:#2E7D32;font-weight:600;">∞ Always (Infinite) Access</span>';
+  } else if (user.sessionExpiry && new Date(user.sessionExpiry) > new Date()) {
+    currentAccessText = `<span style="color:#1565C0;font-weight:600;">⏱️ Active 3-Hour Access (Expires: ${new Date(user.sessionExpiry).toLocaleTimeString('en-IN')})</span>`;
+  } else {
+    currentAccessText = '<span style="color:#546E7A;font-weight:600;">🔒 No Active Access</span>';
+  }
+
+  modalBody.innerHTML = `
+    <div style="background:#F8FAFC;padding:12px 16px;border-radius:6px;margin-bottom:20px;border:1px solid #E2E8F0;">
+      <p style="margin-bottom:4px;font-size:0.9rem;"><strong>User:</strong> ${user.name} (${user.email})</p>
+      <p style="margin-bottom:4px;font-size:0.9rem;"><strong>Business:</strong> ${user.businessName || 'N/A'}</p>
+      <p style="margin-bottom:0;font-size:0.9rem;"><strong>Current Status:</strong> ${currentAccessText}</p>
+    </div>
+
+    <label style="display:block;font-size:0.85rem;font-weight:600;margin-bottom:8px;color:#334155;">Select Access Duration Action:</label>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+      <button class="btn" style="width:100%;text-align:left;padding:12px;background:#2E7D32;color:#fff;border:none;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="saveUserAccess('${user._id}', 'always')">
+        <div>
+          <div style="font-weight:600;">∞ Grant Always (Infinite) Access</div>
+          <div style="font-size:0.75rem;opacity:0.9;">User can log in anytime without expiration or re-approval</div>
+        </div>
+        <span>➔</span>
+      </button>
+
+      <button class="btn" style="width:100%;text-align:left;padding:12px;background:#1565C0;color:#fff;border:none;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="saveUserAccess('${user._id}', '3h')">
+        <div>
+          <div style="font-weight:600;">⏱️ Grant 3 Hours Access</div>
+          <div style="font-size:0.75rem;opacity:0.9;">Starts a new 3-hour access timer from now</div>
+        </div>
+        <span>➔</span>
+      </button>
+
+      <button class="btn" style="width:100%;text-align:left;padding:12px;background:#C62828;color:#fff;border:none;border-radius:6px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="saveUserAccess('${user._id}', 'revoke')">
+        <div>
+          <div style="font-weight:600;">🚫 Revoke / Remove Access</div>
+          <div style="font-size:0.75rem;opacity:0.9;">Removes infinite or active access (user will require admin approval next time)</div>
+        </div>
+        <span>➔</span>
+      </button>
+    </div>
+
+    <div style="text-align:right;">
+      <button class="btn btn-secondary" onclick="closeModal('editUserAccessModal')">Cancel</button>
+    </div>
+  `;
+
+  openModal('editUserAccessModal');
+};
+
+window.saveUserAccess = async function(userId, accessType) {
+  try {
+    const res = await API.adminUpdateUserAccess(userId, accessType);
+    showToast(res.message || 'User access updated successfully', 'success');
+    closeModal('editUserAccessModal');
+    loadUsers();
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
+};
+
+window.loadUsers = loadUsers;
+window.filterUsers = filterUsers;
+window.deleteUser = deleteUser;
 
 async function deleteUser(id) {
   if (!confirm('Are you sure you want to completely remove this user? They will lose access to the portal.')) return;

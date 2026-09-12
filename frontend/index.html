@@ -275,8 +275,11 @@
             <circle cx="11" cy="11" r="8" />
             <line x1="21" y1="21" x2="16.65" y2="16.65" />
           </svg>
-          <input type="text" id="mobileSearchInput" placeholder="Search for products..." aria-label="Search"
+          <input type="text" id="mobileSearchInput" placeholder="Search products or price (e.g. 500)..." aria-label="Search"
             autocomplete="off">
+          <button type="button" id="homePriceBtn" class="btn-price-search" onclick="quickPriceSearchHome()" style="margin-right:6px;">
+            💰 By Price
+          </button>
           <button type="submit" class="btn-search-submit">Search</button>
         </div>
         <div id="mobileSearchSuggestions" class="search-suggestions" style="display:none"></div>

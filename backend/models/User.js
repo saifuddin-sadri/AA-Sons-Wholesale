@@ -11,7 +11,8 @@ const userSchema = new mongoose.Schema({
   businessName:  { type: String, trim: true },
   contactNumber: { type: String, trim: true },
   businessCard:  { type: String, default: '' },
-  isApproved:    { type: Boolean, default: false },
+  isApproved:    { type: Boolean, default: true },
+  alwaysAccess:  { type: Boolean, default: false },
   sessionExpiry: { type: Date },
   address: {
     street:  String,

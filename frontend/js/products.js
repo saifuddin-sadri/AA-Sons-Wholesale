@@ -816,6 +816,18 @@ function readURLParams() {
   }
 }
 
+window.promptPriceSearch = function() {
+  const price = prompt('Enter maximum price (₹) to search products:', '500');
+  if (price !== null && price.trim() !== '') {
+    const num = parseFloat(price.replace(/[^0-9.]/g, ''));
+    if (!isNaN(num) && num > 0) {
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) searchInput.value = num;
+      loadProducts();
+    }
+  }
+};
+
 function initFilters() {
   let searchTimer;
   const searchInput = document.getElementById('searchInput');
@@ -826,10 +838,13 @@ function initFilters() {
     clearTimeout(searchTimer);
     
     // Suggestion logic
-    if (query.length >= 2) {
+    if (query.length >= 1) {
       searchTimer = setTimeout(async () => {
+        const numValue = parseFloat(query.replace(/[^0-9.]/g, ''));
+        const isNumeric = !isNaN(numValue) && numValue > 0;
+
         // 1. Category matches
-        const catMatches = allCategories.filter(c => c.name.toLowerCase().includes(query)).slice(0, 3);
+        const catMatches = isNumeric ? [] : allCategories.filter(c => c.name.toLowerCase().includes(query)).slice(0, 3);
         
         // 2. Product matches
         let productMatches = [];
@@ -840,13 +855,26 @@ function initFilters() {
           console.error('Product search error:', err);
         }
 
-        if (catMatches.length === 0 && productMatches.length === 0) {
+        if (!isNumeric && catMatches.length === 0 && productMatches.length === 0) {
           suggestionsBox.style.display = 'none';
           loadProducts(); // Still filter the grid
           return;
         }
 
         let html = '';
+
+        // If user typed a price or number, show explicit Price Filter suggestion
+        if (isNumeric) {
+          html += `
+            <div class="suggestion-item" onclick="loadProducts()" style="background:#F0FDF4; border-bottom:1px solid #DCFCE7;">
+              <div class="suggestion-icon">💰</div>
+              <div class="suggestion-content">
+                <span class="suggestion-name" style="color:#15803D; font-weight:600;">Products Up To ${formatRupees(numValue)}</span>
+                <span class="suggestion-type" style="color:#166534;">PRICE SEARCH</span>
+              </div>
+            </div>
+          `;
+        }
         
         // Render Categories
         if (catMatches.length > 0) {

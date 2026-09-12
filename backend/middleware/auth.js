@@ -16,11 +16,14 @@ exports.protect = async (req, res, next) => {
     // Admin users bypass session expiry check
     if (req.user.role === 'admin') return next();
 
+    // Always-access users bypass session expiry check
+    if (req.user.alwaysAccess) return next();
+
     // Check session expiry for regular users
-    if (req.user.sessionExpiry && new Date() > req.user.sessionExpiry) {
+    if (!req.user.sessionExpiry || new Date() > new Date(req.user.sessionExpiry)) {
       return res.status(401).json({
         success: false,
-        message: 'Session expired. Please submit a new login request.',
+        message: 'Session expired or access revoked. Please submit a new login request.',
         sessionExpired: true
       });
     }

@@ -38,9 +38,6 @@
 
 // ─── SESSION TIMER: Countdown + auto-logout ───────────
 function initSessionTimer() {
-  const expiry = localStorage.getItem('aa_session_expiry');
-  if (!expiry) return;
-
   try {
     const user = JSON.parse(localStorage.getItem('aa_user'));
     if (user?.role === 'admin') return;
@@ -52,20 +49,36 @@ function initSessionTimer() {
     const timerEl = document.createElement('div');
     timerEl.id = 'sessionTimer';
     timerEl.style.cssText = 'display:flex;align-items:center;gap:5px;background:rgba(27,94,75,0.1);color:var(--teal,#1B5E4B);padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:600;font-family:var(--font-body);white-space:nowrap;';
-    timerEl.innerHTML = '<span style="font-size:0.85rem;">⏱</span> <span id="sessionCountdown">--:--:--</span>';
+    timerEl.innerHTML = '<span id="sessionTimerIcon" style="font-size:0.85rem;">⏱</span> <span id="sessionCountdown">--:--:--</span>';
     navRight.insertBefore(timerEl, navRight.firstChild);
   }
 
   const countdownEl = document.getElementById('sessionCountdown');
+  const iconEl = document.getElementById('sessionTimerIcon');
+  const timerEl = document.getElementById('sessionTimer');
   if (!countdownEl) return;
 
   function updateTimer() {
+    const expiry = localStorage.getItem('aa_session_expiry');
+    if (!expiry) return;
+
+    if (expiry === 'always') {
+      if (iconEl) iconEl.textContent = '∞';
+      countdownEl.textContent = 'Always Access';
+      if (timerEl) {
+        timerEl.style.background = 'rgba(27,94,75,0.1)';
+        timerEl.style.color = 'var(--teal,#1B5E4B)';
+      }
+      return;
+    }
+
+    if (iconEl) iconEl.textContent = '⏱';
+
     const now = new Date();
     const end = new Date(expiry);
     const diff = end - now;
 
-    if (diff <= 0) {
-      // Session expired — auto-logout
+    if (isNaN(end.getTime()) || diff <= 0) {
       localStorage.removeItem('aa_token');
       localStorage.removeItem('aa_user');
       localStorage.removeItem('aa_session_expiry');
@@ -79,8 +92,6 @@ function initSessionTimer() {
 
     countdownEl.textContent = `${String(hours).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 
-    // Change color when less than 10 minutes
-    const timerEl = document.getElementById('sessionTimer');
     if (timerEl) {
       if (diff < 600000) {
         timerEl.style.background = 'rgba(198,40,40,0.1)';
@@ -88,6 +99,9 @@ function initSessionTimer() {
       } else if (diff < 1800000) {
         timerEl.style.background = 'rgba(245,158,11,0.1)';
         timerEl.style.color = '#D97706';
+      } else {
+        timerEl.style.background = 'rgba(27,94,75,0.1)';
+        timerEl.style.color = 'var(--teal,#1B5E4B)';
       }
     }
   }
@@ -462,6 +476,16 @@ async function initLandingCategories() {
   }
 }
 
+window.quickPriceSearchHome = function() {
+  const price = prompt('Enter maximum price (₹) to search products:', '500');
+  if (price !== null && price.trim() !== '') {
+    const num = parseFloat(price.replace(/[^0-9.]/g, ''));
+    if (!isNaN(num) && num > 0) {
+      window.location.href = `/products?q=${num}`;
+    }
+  }
+};
+
 function initSearch() {
   const trigger = document.getElementById('searchTrigger');
   const mobileForm = document.getElementById('mobileSearchForm');
@@ -482,14 +506,17 @@ function initSearch() {
       const query = e.target.value.toLowerCase().trim();
       clearTimeout(searchTimer);
       
-      if (query.length < 2) {
+      if (query.length < 1) {
         suggestionsBox.style.display = 'none';
         return;
       }
 
       searchTimer = setTimeout(async () => {
+        const numValue = parseFloat(query.replace(/[^0-9.]/g, ''));
+        const isNumeric = !isNaN(numValue) && numValue > 0;
+
         // 1. Find category matches (local)
-        const catMatches = landingCategories.filter(c => c.name.toLowerCase().includes(query)).slice(0, 3);
+        const catMatches = isNumeric ? [] : landingCategories.filter(c => c.name.toLowerCase().includes(query)).slice(0, 3);
         
         // 2. Fetch product matches (API)
         let productMatches = [];
@@ -500,12 +527,24 @@ function initSearch() {
           console.error('Product search error:', err);
         }
 
-        if (catMatches.length === 0 && productMatches.length === 0) {
+        if (!isNumeric && catMatches.length === 0 && productMatches.length === 0) {
           suggestionsBox.style.display = 'none';
           return;
         }
 
         let html = '';
+
+        if (isNumeric) {
+          html += `
+            <div class="suggestion-item" onclick="window.location.href='/products?q=${numValue}'" style="background:#F0FDF4; border-bottom:1px solid #DCFCE7;">
+              <div class="suggestion-icon">💰</div>
+              <div class="suggestion-content">
+                <div class="suggestion-name" style="color:#15803D; font-weight:600;">Search Products Up To ${formatRupees(numValue)}</div>
+                <div class="suggestion-type" style="color:#166534;">PRICE SEARCH</div>
+              </div>
+            </div>
+          `;
+        }
         
         // Categories Header
         if (catMatches.length > 0) {
@@ -551,7 +590,6 @@ function initSearch() {
       e.preventDefault();
       const query = mobileInput.value.trim();
       if (query) {
-        // Changed param to 'q' to match products.js expectations
         window.location.href = `/products?q=${encodeURIComponent(query)}`;
       }
     });

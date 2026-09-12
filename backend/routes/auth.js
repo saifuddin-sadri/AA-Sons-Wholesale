@@ -15,55 +15,53 @@ const signSessionToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expi
 // Helper: sign admin token (longer lived)
 const signAdminToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE || '7d' });
 
-// ─── PUBLIC: Submit Registration Request ──────────────
+// ─── PUBLIC: User Registration (Direct Account Creation) ──────
 router.post('/register-request', async (req, res) => {
   try {
-    const { name, email, businessName, contactNumber, businessCard, address } = req.body;
+    const { name, email, password, businessName, contactNumber, businessCard, address } = req.body;
 
     if (!name || !email || !businessName || !contactNumber) {
       return res.status(400).json({ success: false, message: 'Name, email, business name, and contact number are required' });
     }
 
+    const cleanEmail = email.toLowerCase().trim();
+    const cleanContact = contactNumber.trim();
+
     // Check if user already exists by email or contactNumber
     const existingUser = await User.findOne({
-      $or: [{ email: email.toLowerCase() }, { contactNumber }, { phone: contactNumber }]
+      $or: [{ email: cleanEmail }, { contactNumber: cleanContact }, { phone: cleanContact }]
     });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'An account with this email or mobile number already exists. Please send a login request.' });
     }
 
-    // Check if there's already a pending registration request
-    const existingRequest = await RegistrationRequest.findOne({
-      status: 'pending',
-      $or: [{ email: email.toLowerCase() }, { contactNumber }]
-    });
-    if (existingRequest) {
-      return res.status(400).json({ success: false, message: 'A registration request for this email or mobile number is already pending' });
-    }
-
-    const request = await RegistrationRequest.create({
-      name, email: email.toLowerCase(), password: '', businessName, contactNumber,
+    // Create user directly (no registration request or admin permission needed)
+    const user = new User({
+      name,
+      email: cleanEmail,
+      password: password || '',
+      phone: cleanContact,
+      contactNumber: cleanContact,
+      businessName,
       businessCard: businessCard || '',
-      address: address || {}
+      address: address || {},
+      isApproved: true,
+      role: 'user'
     });
 
-    // Create admin notification
-    await createAdminNotification({
-      title: 'New Registration Request',
-      message: `${name} (${businessName}) has requested registration.`,
-      type: 'registration',
-      link: 'registration-requests',
-      metadata: { requestId: request._id }
-    });
+    await user.save();
 
-    res.status(201).json({ success: true, message: 'Registration request sent successfully! You will receive an email once approved.' });
+    res.status(201).json({
+      success: true,
+      message: 'Account created successfully! You can now submit a login request.'
+    });
   } catch (err) {
     console.error('Register request error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// ─── PUBLIC: Submit Login Request ──────────────────────
+// ─── PUBLIC: Submit Login Request / Access Check ──────────────
 router.post('/login-request', async (req, res) => {
   try {
     const { contactNumber, email, password } = req.body;
@@ -104,27 +102,70 @@ router.post('/login-request', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Admin accounts must use Admin Login with email and password.' });
     }
 
-    if (!user.isApproved) {
-      return res.status(403).json({ success: false, message: 'Your account has not been approved yet. Please wait for admin approval.' });
+    // 1. Check if user has permanent "Always Access"
+    if (user.alwaysAccess) {
+      const token = signAdminToken(user._id);
+      user.sessionExpiry = null;
+      await user.save();
+      return res.json({
+        success: true,
+        directLogin: true,
+        token,
+        sessionExpiry: 'always',
+        user: {
+          id: user._id, name: user.name, email: user.email,
+          role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
+        }
+      });
     }
 
-    // Check if user has an approved login request
+    // 2. Check if user's 3-hour session is STILL ACTIVE (time remaining)
+    if (user.sessionExpiry && new Date() < new Date(user.sessionExpiry)) {
+      const token = signSessionToken(user._id);
+      return res.json({
+        success: true,
+        directLogin: true,
+        token,
+        sessionExpiry: user.sessionExpiry.toISOString(),
+        user: {
+          id: user._id, name: user.name, email: user.email,
+          role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
+        }
+      });
+    }
+
+    // 3. Check if user has an approved login request
     const approvedLogin = await LoginRequest.findOne({
       user: user._id,
       status: 'approved'
     }).sort({ approvedAt: -1 });
 
     if (approvedLogin) {
+      if (approvedLogin.duration === 'always') {
+        user.alwaysAccess = true;
+        user.sessionExpiry = null;
+        await user.save();
+
+        approvedLogin.status = 'used';
+        await approvedLogin.save();
+
+        const token = signAdminToken(user._id);
+        return res.json({
+          success: true,
+          directLogin: true,
+          token,
+          sessionExpiry: 'always',
+          user: {
+            id: user._id, name: user.name, email: user.email,
+            role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
+          }
+        });
+      }
+
       const approvedAt = approvedLogin.approvedAt || approvedLogin.createdAt;
-      const isMoreThan3HoursOld = approvedAt && (new Date() - new Date(approvedAt) > 3 * 60 * 60 * 1000);
+      const isWithin3Hours = approvedAt && (new Date() - new Date(approvedAt) <= 3 * 60 * 60 * 1000);
 
-      const neverUsed = !user.sessionExpiry;
-      const sessionActive = user.sessionExpiry && new Date() <= user.sessionExpiry;
-      const approvedAfterSessionExpiry = user.sessionExpiry && approvedAt && new Date(approvedAt) > new Date(user.sessionExpiry);
-
-      const isValid = (neverUsed || sessionActive || approvedAfterSessionExpiry) && !isMoreThan3HoursOld;
-
-      if (isValid) {
+      if (isWithin3Hours) {
         const sessionExpiry = new Date(Date.now() + 3 * 60 * 60 * 1000);
         user.sessionExpiry = sessionExpiry;
         await user.save();
@@ -150,7 +191,7 @@ router.post('/login-request', async (req, res) => {
       }
     }
 
-    // Check if there's already a pending login request
+    // 4. Check if there's already a pending login request
     const existingRequest = await LoginRequest.findOne({ user: user._id, status: 'pending' });
     if (existingRequest) {
       return res.status(400).json({ success: false, message: 'A login request is already pending. Please wait for admin approval.' });
@@ -225,6 +266,34 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Admin accounts must log in with email and password.' });
     }
 
+    if (user.alwaysAccess) {
+      const token = signAdminToken(user._id);
+      user.sessionExpiry = null;
+      await user.save();
+      return res.json({
+        success: true,
+        token,
+        sessionExpiry: 'always',
+        user: {
+          id: user._id, name: user.name, email: user.email,
+          role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
+        }
+      });
+    }
+
+    if (user.sessionExpiry && new Date() < new Date(user.sessionExpiry)) {
+      const token = signSessionToken(user._id);
+      return res.json({
+        success: true,
+        token,
+        sessionExpiry: user.sessionExpiry.toISOString(),
+        user: {
+          id: user._id, name: user.name, email: user.email,
+          role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
+        }
+      });
+    }
+
     // Check for approved login request
     const approvedLogin = await LoginRequest.findOne({
       user: user._id,
@@ -235,6 +304,26 @@ router.post('/login', async (req, res) => {
       return res.status(403).json({
         success: false,
         message: 'No approved login request found. Please submit a login request first.'
+      });
+    }
+
+    if (approvedLogin.duration === 'always') {
+      user.alwaysAccess = true;
+      user.sessionExpiry = null;
+      await user.save();
+
+      approvedLogin.status = 'used';
+      await approvedLogin.save();
+
+      const token = signAdminToken(user._id);
+      return res.json({
+        success: true,
+        token,
+        sessionExpiry: 'always',
+        user: {
+          id: user._id, name: user.name, email: user.email,
+          role: user.role, businessName: user.businessName, contactNumber: user.contactNumber
+        }
       });
     }
 
@@ -279,8 +368,8 @@ router.get('/session-status', protect, async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-    if (user.role === 'admin') {
-      return res.json({ success: true, isAdmin: true, sessionExpiry: null });
+    if (user.role === 'admin' || user.alwaysAccess) {
+      return res.json({ success: true, isAdmin: user.role === 'admin', isAlways: true, sessionExpiry: null, isExpired: false });
     }
 
     res.json({
@@ -430,6 +519,9 @@ router.get('/admin/login-requests/:id', protect, adminOnly, async (req, res) => 
 // ─── ADMIN: Approve Login Request ────────────────────
 router.patch('/admin/login-requests/:id/approve', protect, adminOnly, async (req, res) => {
   try {
+    const { duration } = req.body;
+    const selectedDuration = duration === 'always' ? 'always' : '3h';
+
     const loginReq = await LoginRequest.findById(req.params.id);
     if (!loginReq) return res.status(404).json({ success: false, message: 'Request not found' });
     if (loginReq.status === 'approved') {
@@ -437,12 +529,35 @@ router.patch('/admin/login-requests/:id/approve', protect, adminOnly, async (req
     }
 
     loginReq.status = 'approved';
+    loginReq.duration = selectedDuration;
     loginReq.approvedAt = new Date();
     await loginReq.save();
+
+    // If 'always' duration was selected, update user record immediately for permanent access
+    if (selectedDuration === 'always') {
+      const u = await User.findById(loginReq.user);
+      if (u) {
+        u.alwaysAccess = true;
+        u.sessionExpiry = null;
+        await u.save();
+      }
+    }
 
     // Send email with link to login page
     const siteUrl = `${req.protocol}://${req.get('host')}`;
     const loginLink = `${siteUrl}/auth?approved=true&mobile=${encodeURIComponent(loginReq.contactNumber || '')}`;
+
+    const durationNotice = selectedDuration === 'always'
+      ? `<p style="color: #555;">You have been granted <strong>Always Access</strong> (unlimited access to the portal).</p>`
+      : `<p style="color: #555;">Click the button below to go to the login page, enter your registered Mobile Number, and you will be granted <strong>3 hours</strong> of access.</p>`;
+
+    const noteBox = selectedDuration === 'always'
+      ? `<div style="background: #E8F5E9; border-left: 4px solid #2E7D32; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
+          <p style="color: #1B5E4B; margin: 0; font-size: 0.85rem;"><strong>✨ Note:</strong> You have unlimited permanent access to the portal.</p>
+        </div>`
+      : `<div style="background: #FFF8E7; border-left: 4px solid #C8873A; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
+          <p style="color: #8B6914; margin: 0; font-size: 0.85rem;"><strong>⏱ Note:</strong> Your session will automatically expire after 3 hours. After that, you will need to submit a new login request.</p>
+        </div>`;
 
     const html = `
       <div style="font-family: 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 12px; overflow: hidden;">
@@ -454,20 +569,18 @@ router.patch('/admin/login-requests/:id/approve', protect, adminOnly, async (req
           <h2 style="color: #1B5E4B; margin-top: 0;">Login Request Approved! 🔓</h2>
           <p style="color: #555;">Dear <strong>${loginReq.name}</strong>,</p>
           <p style="color: #555;">Your login request has been approved. You now have access to the A.A & Sons wholesale portal.</p>
-          <p style="color: #555;">Click the button below to go to the login page, enter your registered Mobile Number, and you will be granted <strong>3 hours</strong> of access.</p>
+          ${durationNotice}
           <div style="text-align: center; margin: 30px 0;">
             <a href="${loginLink}" style="background: #1B5E4B; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">Login Now</a>
           </div>
-          <div style="background: #FFF8E7; border-left: 4px solid #C8873A; padding: 12px 16px; border-radius: 4px; margin: 20px 0;">
-            <p style="color: #8B6914; margin: 0; font-size: 0.85rem;"><strong>⏱ Note:</strong> Your session will automatically expire after 3 hours. After that, you will need to submit a new login request.</p>
-          </div>
+          ${noteBox}
           <p style="font-size: 0.85rem; color: #999;">Thank you for choosing A.A & Sons!</p>
         </div>
       </div>
     `;
-    await sendEmail(loginReq.email, 'Login Approved — A.A & Sons', html);
+    await sendEmail(loginReq.email, `Login Approved (${selectedDuration === 'always' ? 'Always Access' : '3 Hours'}) — A.A & Sons`, html);
 
-    res.json({ success: true, message: 'Login request approved and email sent to user' });
+    res.json({ success: true, message: `Login request approved for ${selectedDuration === 'always' ? 'Always Access' : '3 Hours'} and email sent to user` });
   } catch (err) {
     console.error('Approve login error:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -494,6 +607,36 @@ router.get('/admin/users', protect, adminOnly, async (req, res) => {
       .select('-password')
       .sort({ createdAt: -1 });
     res.json({ success: true, users });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// ─── ADMIN: Update User Access ─────────────────────────
+router.patch('/admin/users/:id/access', protect, adminOnly, async (req, res) => {
+  try {
+    const { accessType } = req.body; // 'always', '3h', 'revoke'
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Cannot modify access of admin users' });
+    }
+
+    if (accessType === 'always' || accessType === 'infinite') {
+      user.alwaysAccess = true;
+      user.sessionExpiry = null;
+    } else if (accessType === '3h') {
+      user.alwaysAccess = false;
+      user.sessionExpiry = new Date(Date.now() + 3 * 3600 * 1000);
+    } else if (accessType === 'revoke') {
+      user.alwaysAccess = false;
+      user.sessionExpiry = new Date(0);
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid accessType' });
+    }
+
+    await user.save();
+    res.json({ success: true, message: 'User access updated successfully', user });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

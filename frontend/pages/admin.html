@@ -262,9 +262,7 @@
           <div class="admin-nav-item" data-page="festive">
             <span class="admin-nav-icon">✨</span> Festive Season
           </div>
-          <div class="admin-nav-item" data-page="registration-requests">
-            <span class="admin-nav-icon">📋</span> Registration Requests
-          </div>
+
           <div class="admin-nav-item" data-page="login-requests">
             <span class="admin-nav-icon">🔐</span> Login Requests
           </div>
@@ -1144,46 +1142,7 @@
 
         </div>
 
-        <!-- ── REGISTRATION REQUESTS PAGE ── -->
-        <div id="page-registration-requests" class="admin-page" style="display:none">
-          <div class="admin-table-section">
-            <div class="admin-table-header">
-              <h3>Registration Requests <span id="badgeRegRequests"
-                  style="background:var(--cream);color:var(--teal-dark);padding:2px 8px;border-radius:12px;font-size:0.75rem;font-weight:600;margin-left:8px;vertical-align:middle;">0</span>
-              </h3>
-              <div class="admin-table-tools">
-                <select class="admin-filter-select" id="regStatusFilter" onchange="loadRegistrationRequests()">
-                  <option value="all">All Status</option>
-                  <option value="pending" selected>Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-                <button class="btn-outline-gold" onclick="loadRegistrationRequests()">🔄 Refresh</button>
-              </div>
-            </div>
-            <div class="admin-table-wrapper">
-              <table class="admin-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Business Name</th>
-                    <th>Contact</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody id="regRequestsTableBody">
-                  <tr>
-                    <td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">Loading registration
-                      requests…</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+
 
         <!-- ── LOGIN REQUESTS PAGE ── -->
         <div id="page-login-requests" class="admin-page" style="display:none">
@@ -1250,17 +1209,18 @@
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th>Date Joined</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Business Name</th>
-                    <th>Contact</th>
-                    <th>Actions</th>
+                    <th style="min-width:100px;">Date Joined</th>
+                    <th style="min-width:140px;">Name</th>
+                    <th style="min-width:180px;">Email</th>
+                    <th style="min-width:150px;">Business Name</th>
+                    <th style="min-width:110px;">Contact</th>
+                    <th style="min-width:130px; text-align:center;">Access Level</th>
+                    <th style="min-width:130px; text-align:center;">Actions</th>
                   </tr>
                 </thead>
                 <tbody id="usersTableBody">
                   <tr>
-                    <td colspan="6" style="text-align:center;padding:32px;color:var(--mid)">Loading users…</td>
+                    <td colspan="7" style="text-align:center;padding:32px;color:var(--mid)">Loading users…</td>
                   </tr>
                 </tbody>
               </table>
@@ -1402,16 +1362,6 @@
     </div>
   </div>
 
-  <!-- Registration Request Detail Modal -->
-  <div class="modal-overlay" id="regRequestModal">
-    <div class="modal" style="max-width:600px">
-      <div class="modal-header">
-        <h3>Registration Request Details</h3>
-        <button class="modal-close" onclick="closeModal('regRequestModal')">✕</button>
-      </div>
-      <div class="modal-body" id="regRequestModalBody"></div>
-    </div>
-  </div>
 
   <!-- Login Request Detail Modal -->
   <div class="modal-overlay" id="loginRequestModal">
@@ -1421,6 +1371,19 @@
         <button class="modal-close" onclick="closeModal('loginRequestModal')">✕</button>
       </div>
       <div class="modal-body" id="loginRequestModalBody"></div>
+    </div>
+  </div>
+
+  <!-- Edit User Access Modal -->
+  <div class="modal-overlay" id="editUserAccessModal">
+    <div class="modal" style="max-width:500px">
+      <div class="modal-header">
+        <h3>Edit User Access</h3>
+        <button class="modal-close" onclick="closeModal('editUserAccessModal')">✕</button>
+      </div>
+      <div class="modal-body" id="editUserAccessModalBody">
+        <!-- Injected dynamically by JS -->
+      </div>
     </div>
   </div>
 

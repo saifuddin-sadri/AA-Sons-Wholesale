@@ -299,7 +299,7 @@
       showMessage('registerMessage', err.message, 'error');
     } finally {
       registerBtn.disabled = false;
-      registerBtnText.textContent = 'Send Registration Request';
+      registerBtnText.textContent = 'Create Account';
     }
   });
 
@@ -314,7 +314,7 @@
 
     // Check session expiry
     const expiry = localStorage.getItem('aa_session_expiry');
-    if (expiry && new Date() < new Date(expiry)) {
+    if (expiry === 'always' || (expiry && new Date() < new Date(expiry))) {
       // If user came to /auth, show active session notice without auto-redirecting
       if (approvedBanner && user.name) {
         approvedBanner.className = 'approved-banner visible';

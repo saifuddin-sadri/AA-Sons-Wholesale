@@ -9,6 +9,7 @@ const loginRequestSchema = new mongoose.Schema({
   contactNumber: { type: String, trim: true },
   businessCard:  { type: String, default: '' },
   status:        { type: String, enum: ['pending', 'approved', 'rejected', 'used', 'expired'], default: 'pending' },
+  duration:      { type: String, enum: ['3h', 'always'], default: '3h' },
   approvedAt:    { type: Date }
 }, { timestamps: true });
 

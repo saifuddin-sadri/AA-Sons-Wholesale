@@ -27,12 +27,43 @@ router.get('/', async (req, res) => {
     const { search, category, minPrice, maxPrice, featured, bestSeller, page = 1, limit = 20, sort = '-createdAt' } = req.query;
     const query = { active: true };
 
-    if (search) query.$text = { $search: search };
+    let effectiveMinPrice = (minPrice !== undefined && minPrice !== null && minPrice !== '') ? Number(minPrice) : null;
+    let effectiveMaxPrice = (maxPrice !== undefined && maxPrice !== null && maxPrice !== '') ? Number(maxPrice) : null;
+
+    let textSearchQuery = null;
+
+    if (search) {
+      const cleanSearch = search.trim();
+      const numValue = parseFloat(cleanSearch.replace(/[^0-9.]/g, ''));
+
+      // 1. Check for explicit price range format like "500-1500" or "500 to 1500"
+      const isPriceRange = /^\s*(\d+)\s*[-–—to]+\s*(\d+)\s*$/i.exec(cleanSearch);
+      // 2. Check for price expressions like "under 500", "below 500", "₹500", "rs 500", or pure number "500"
+      const isPriceExpr = /^\s*(under|below|less than|max|<=?|rs\.?|₹)?\s*(\d+)\s*(rs\.?|₹)?\s*$/i.test(cleanSearch);
+
+      if (isPriceRange) {
+        effectiveMinPrice = Number(isPriceRange[1]);
+        effectiveMaxPrice = Number(isPriceRange[2]);
+      } else if (!isNaN(numValue) && numValue > 0 && (isPriceExpr || /^\d+$/.test(cleanSearch) || cleanSearch.includes('₹') || cleanSearch.toLowerCase().includes('rs'))) {
+        // Explicit price query (e.g. "500", "under 500", "₹500")
+        // Set maximum price limit strictly to numValue unless maxPrice was explicitly provided
+        if (effectiveMaxPrice === null) {
+          effectiveMaxPrice = numValue;
+        }
+      } else {
+        // Keyword text search (e.g. "Sherwani", "Lehenga")
+        textSearchQuery = search;
+      }
+    }
+
+    if (textSearchQuery) {
+      query.$text = { $search: textSearchQuery };
+    }
+
     if (category && category !== 'all') {
       const categoryList = Array.isArray(category) ? category : category.split(',');
       const Category = require('../models/Category');
       
-      // Find all categories and their subcategories
       const selectedCategories = await Category.find({ name: { $in: categoryList } });
       const selectedIds = selectedCategories.map(c => c._id);
       const subCategories = await Category.find({ parent: { $in: selectedIds } });
@@ -44,12 +75,25 @@ router.get('/', async (req, res) => {
       
       query.category = { $in: allTargetCategoryNames };
     }
+
     if (featured === 'true') query.featured = true;
     if (bestSeller === 'true') query.bestSeller = true;
-    if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = Number(minPrice);
-      if (maxPrice) query.price.$lte = Number(maxPrice);
+
+    // Apply STRICT price filtering whenever effectiveMinPrice or effectiveMaxPrice is defined
+    if (effectiveMinPrice !== null || effectiveMaxPrice !== null) {
+      const priceCondition = {};
+      if (effectiveMinPrice !== null && !isNaN(effectiveMinPrice)) priceCondition.$gte = effectiveMinPrice;
+      if (effectiveMaxPrice !== null && !isNaN(effectiveMaxPrice)) priceCondition.$lte = effectiveMaxPrice;
+
+      if (Object.keys(priceCondition).length > 0) {
+        query.$and = query.$and || [];
+        query.$and.push({
+          $or: [
+            { price: priceCondition },
+            { 'variations.price': priceCondition }
+          ]
+        });
+      }
     }
 
     const skip = (Number(page) - 1) * Number(limit);

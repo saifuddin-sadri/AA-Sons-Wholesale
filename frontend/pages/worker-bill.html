@@ -19,7 +19,8 @@
     .bill-container {
       width: 100%;
       max-width: 800px;
-      margin: 0 auto 120px; /* extra space at bottom for fixed bar */
+      margin: 0 auto 120px;
+      /* extra space at bottom for fixed bar */
       background: white;
       padding: 40px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -152,7 +153,9 @@
       break-inside: avoid !important;
     }
 
-    .bill-header, .bill-info, .total-section {
+    .bill-header,
+    .bill-info,
+    .total-section {
       page-break-inside: avoid !important;
       break-inside: avoid !important;
     }
@@ -182,8 +185,13 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     .actions {
@@ -197,7 +205,7 @@
       justify-content: center;
       gap: 12px;
       z-index: 1000;
-      box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+      box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
       flex-wrap: wrap;
     }
 
@@ -243,7 +251,8 @@
 
       .bill-container {
         padding: 20px 15px;
-        margin-bottom: 140px; /* space for actions bar */
+        margin-bottom: 140px;
+        /* space for actions bar */
       }
 
       .bill-header h1 {
@@ -261,7 +270,8 @@
       }
 
       .items-table {
-        min-width: 600px; /* ensures horizontal scroll instead of ugly column squeeze */
+        min-width: 600px;
+        /* ensures horizontal scroll instead of ugly column squeeze */
       }
 
       .actions {
@@ -294,10 +304,12 @@
       .actions {
         display: none !important;
       }
+
       body {
         background: white;
         padding: 0;
       }
+
       .bill-container {
         box-shadow: none;
         max-width: 100%;
@@ -305,12 +317,14 @@
         margin: 0;
         padding: 0;
       }
+
       .table-responsive {
         overflow: visible !important;
         border: none;
         border-radius: 0;
         margin-bottom: 30px;
       }
+
       .items-table {
         min-width: 0 !important;
       }
@@ -323,13 +337,14 @@
   <!-- Loading Overlay -->
   <div id="loadingOverlay">
     <div class="spinner"></div>
-    <p style="margin-top: 15px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1rem; color: #333;">Loading bill details...</p>
+    <p style="margin-top: 15px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1rem; color: #333;">
+      Loading bill details...</p>
   </div>
 
   <div class="bill-container" id="bill-content">
     <div class="bill-header">
       <img src="/logo.png" alt="Logo" style="height: 60px; margin-bottom: 10px;">
-      <h1>WORKER ORDER SLIP</h1>
+      <h1>Abbas Ali and Sons </h1>
       <p>Order #<span id="bill-orderNum">...</span> | Date: <span id="bill-date">...</span></p>
     </div>
 
@@ -377,13 +392,15 @@
       </div>
     </div>
 
-    <div style="margin-top: 30px; border-top: 1px dashed #ccc; padding: 15px 0; font-style: italic; color: #888; text-align: center;">
+    <div
+      style="margin-top: 30px; border-top: 1px dashed #ccc; padding: 15px 0; font-style: italic; color: #888; text-align: center;">
       Please prepare the order according to the details mentioned above.
     </div>
   </div>
 
   <div class="actions">
-    <button class="btn btn-print" id="printBtn" onclick="window.print()" disabled style="opacity: 0.6; cursor: not-allowed;">
+    <button class="btn btn-print" id="printBtn" onclick="window.print()" disabled
+      style="opacity: 0.6; cursor: not-allowed;">
       🖨️ Print
     </button>
     <button class="btn btn-download" id="downloadBtn" disabled style="opacity: 0.6; cursor: not-allowed;">
@@ -424,7 +441,7 @@
         document.getElementById('bill-custName').textContent = o.shippingAddress?.name || '—';
         document.getElementById('bill-custPhone').textContent = o.shippingAddress?.phone || '—';
         document.getElementById('bill-orderType').textContent = o.isStorePickup ? 'Store Pickup' : 'Standard Delivery';
-        
+
         const formatRupees = (amount) => {
           return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -493,7 +510,7 @@
             margin: 10,
             filename: `Order_${o.orderNumber}_WorkerSlip.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
+            html2canvas: {
               scale: 2,
               useCORS: true,
               scrollX: 0,
@@ -516,15 +533,15 @@
           text += `*Phone:* ${o.shippingAddress?.phone || '—'}\n`;
           text += `--------------------------\n`;
           text += `*Items:*\n`;
-          
+
           o.items.forEach(item => {
             text += `- ${item.name} x ${item.quantity}`;
             if (item.size || item.color) {
-               text += ` (${item.size ? 'Size: '+item.size : ''}${item.size && item.color ? ', ' : ''}${item.color ? 'Color: '+item.color : ''})`;
+              text += ` (${item.size ? 'Size: ' + item.size : ''}${item.size && item.color ? ', ' : ''}${item.color ? 'Color: ' + item.color : ''})`;
             }
             text += `\n`;
           });
-          
+
           text += `--------------------------\n`;
           text += `*Subtotal:* ${formatRupees(subtotal)}\n`;
           text += `*Shipping:* ${formatRupees(shipping)}\n`;

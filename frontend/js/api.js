@@ -20,12 +20,14 @@
   }
 
   const expiry = localStorage.getItem('aa_session_expiry');
-  if (!expiry || new Date() >= new Date(expiry)) {
-    localStorage.removeItem('aa_token');
-    localStorage.removeItem('aa_user');
-    localStorage.removeItem('aa_session_expiry');
-    window.location.href = '/auth';
-    return;
+  if (expiry !== 'always') {
+    if (!expiry || new Date() >= new Date(expiry)) {
+      localStorage.removeItem('aa_token');
+      localStorage.removeItem('aa_user');
+      localStorage.removeItem('aa_session_expiry');
+      window.location.href = '/auth';
+      return;
+    }
   }
 })();
 
@@ -174,11 +176,12 @@ const API = (() => {
     // Admin — Login Requests
     adminGetLoginRequests:       ()    => req('GET',  '/auth/admin/login-requests'),
     adminGetLoginRequest:        (id)  => req('GET',  `/auth/admin/login-requests/${id}`),
-    adminApproveLogin:           (id)  => req('PATCH',`/auth/admin/login-requests/${id}/approve`),
+    adminApproveLogin:           (id, duration = '3h')  => req('PATCH',`/auth/admin/login-requests/${id}/approve`, { duration }),
     adminRejectLogin:            (id)  => req('PATCH',`/auth/admin/login-requests/${id}/reject`),
 
     // Admin — Users
     adminGetUsers:               ()    => req('GET',  '/auth/admin/users'),
+    adminUpdateUserAccess:       (id, accessType) => req('PATCH', `/auth/admin/users/${id}/access`, { accessType }),
     adminDeleteUser:             (id)  => req('DELETE',`/auth/admin/users/${id}`),
   };
 
@@ -188,4 +191,54 @@ const API = (() => {
 function saveAuth(token, user) {
   localStorage.setItem('aa_token', token);
   localStorage.setItem('aa_user', JSON.stringify(user));
+}
+
+// ─── REAL-TIME SESSION SYNC: Syncs user session state live with backend ───
+async function syncSessionWithServer() {
+  const path = window.location.pathname;
+  if (path === '/auth') return;
+
+  const token = localStorage.getItem('aa_token');
+  const userStr = localStorage.getItem('aa_user');
+  if (!token || !userStr) return;
+
+  try {
+    const user = JSON.parse(userStr);
+    if (user.role === 'admin') return; // Admins bypass session sync
+
+    const data = await API.me();
+    if (data && data.success && data.user) {
+      const freshUser = data.user;
+      if (freshUser.alwaysAccess) {
+        localStorage.setItem('aa_session_expiry', 'always');
+      } else if (freshUser.sessionExpiry && new Date(freshUser.sessionExpiry) > new Date()) {
+        localStorage.setItem('aa_session_expiry', freshUser.sessionExpiry);
+      } else {
+        // Access revoked or expired on backend
+        localStorage.removeItem('aa_token');
+        localStorage.removeItem('aa_user');
+        localStorage.removeItem('aa_session_expiry');
+        window.location.href = '/auth';
+      }
+    }
+  } catch (err) {
+    if (err.message && (err.message.includes('expired') || err.message.includes('revoked') || err.message.includes('authenticated') || err.message.includes('token'))) {
+      localStorage.removeItem('aa_token');
+      localStorage.removeItem('aa_user');
+      localStorage.removeItem('aa_session_expiry');
+      window.location.href = '/auth';
+    }
+  }
+}
+
+// Start real-time session sync on page load, window focus, tab switch, and every 10 seconds
+if (typeof window !== 'undefined') {
+  window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(syncSessionWithServer, 300);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) syncSessionWithServer();
+  });
+  window.addEventListener('focus', syncSessionWithServer);
+  setInterval(syncSessionWithServer, 10000);
 }

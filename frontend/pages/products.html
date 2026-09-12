@@ -195,8 +195,11 @@
         <!-- ── MAIN ── -->
         <div class="products-main">
           <div class="products-toolbar">
-            <div class="search-wrap">
-              <input type="text" class="search-input" id="searchInput" placeholder="Search products…" />
+            <div class="search-wrap" style="position:relative; display:flex; align-items:center;">
+              <input type="text" class="search-input" id="searchInput" placeholder="Search by name, category or price (e.g. 500, under 1000)..." style="padding-right: 115px;" />
+              <button type="button" id="priceSearchQuickBtn" class="btn-price-search" onclick="promptPriceSearch()">
+                💰 By Price
+              </button>
               <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
                 viewBox="0 0 24 24">
                 <circle cx="11" cy="11" r="8" />
